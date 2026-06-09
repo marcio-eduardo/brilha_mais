@@ -1,0 +1,76 @@
+import { useAuthStore } from '../store/authStore';
+import { useThemeStore, ThemeMode } from '../store/themeStore';
+import { LogOut, Sun, Moon, Monitor, User } from 'lucide-react';
+
+export default function ProfileScreen() {
+  const { user, logout } = useAuthStore();
+  const { theme, setTheme } = useThemeStore();
+
+  const handleLogout = async () => {
+    await logout();
+  };
+
+  const themeOptions: { value: ThemeMode; label: string; icon: any }[] = [
+    { value: 'light', label: 'Claro', icon: Sun },
+    { value: 'dark', label: 'Escuro', icon: Moon },
+    { value: 'system', label: 'Sistema', icon: Monitor },
+  ];
+
+  return (
+    <div className="space-y-6 pb-8">
+      <h1 className="text-2xl font-bold text-slate-900 dark:text-text-main">Perfil</h1>
+
+      {/* Cartão de Informações do Usuário */}
+      <div className="bg-white dark:bg-surface p-6 rounded-positivo-lg shadow-sm border border-slate-100 dark:border-border flex flex-col items-center">
+        <div className="w-20 h-20 bg-slate-200 dark:bg-positivo-secondary rounded-full flex items-center justify-center mb-4">
+          <User size={40} className="text-slate-400 dark:text-slate-500" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-text-main text-center">
+          {user?.nomeCompleto || 'Técnico Brilha Mais'}
+        </h2>
+        <p className="text-sm text-slate-500 dark:text-text-muted mt-1">
+          Matrícula: {user?.matricula}
+        </p>
+      </div>
+
+      {/* Configurações de Aparência */}
+      <div className="bg-white dark:bg-surface p-6 rounded-positivo-lg shadow-sm border border-slate-100 dark:border-border space-y-4">
+        <h3 className="font-semibold text-slate-900 dark:text-text-main">Aparência</h3>
+        <p className="text-sm text-slate-500 dark:text-text-muted">
+          Escolha o seu tema preferido para o aplicativo.
+        </p>
+
+        {/* Pílula / Segmented Control */}
+        <div className="flex bg-slate-100 dark:bg-background rounded-positivo-lg p-1">
+          {themeOptions.map((option) => {
+            const Icon = option.icon;
+            const isActive = theme === option.value;
+            return (
+              <button
+                key={option.value}
+                onClick={() => setTheme(option.value)}
+                className={`flex-1 flex flex-col items-center justify-center py-2 space-y-1 rounded-positivo-md transition-all duration-200 ${
+                  isActive
+                    ? 'bg-white dark:bg-surface shadow-sm text-positivo-accent dark:text-primary-DEFAULT font-medium'
+                    : 'text-slate-500 dark:text-text-muted hover:text-slate-700 dark:hover:text-text-main'
+                }`}
+              >
+                <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                <span className="text-xs">{option.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Botão de Sair */}
+      <button
+        onClick={handleLogout}
+        className="w-full flex items-center justify-center space-x-2 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 p-4 rounded-positivo-lg transition-colors font-medium"
+      >
+        <LogOut size={20} />
+        <span>Sair da Conta</span>
+      </button>
+    </div>
+  );
+}

@@ -1,0 +1,425 @@
+import React, { useEffect, useState } from 'react';
+import { Award, TrendingUp, AlertCircle, UserCheck, CheckCircle2, Medal, ChevronDown, ChevronUp, Cpu, XCircle } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { useAuthStore } from '../store/authStore';
+import { api } from '../services/api';
+
+// --- Componente de Progresso Circular (Donut) ---
+const CircularProgress = ({ value, maxValue, color, label, subLabel, isPercentage }: any) => {
+  const radius = 46;
+  const circumference = 2 * Math.PI * radius;
+  const percent = Math.min(Math.max(value / (maxValue || 100), 0), 1);
+  const strokeDashoffset = circumference - percent * circumference;
+
+  return (
+    <div className="relative w-36 h-36 flex items-center justify-center mx-auto mb-2 mt-2">
+      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 112 112">
+        <circle
+          cx="56"
+          cy="56"
+          r={radius}
+          stroke="currentColor"
+          strokeWidth="10"
+          fill="transparent"
+          className="text-slate-100 dark:text-slate-800"
+        />
+        <circle
+          cx="56"
+          cy="56"
+          r={radius}
+          stroke={color}
+          strokeWidth="10"
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="butt"
+          className="transition-all duration-1000 ease-in-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-xl md:text-2xl font-bold text-slate-900 dark:text-text-main">
+          {label}{isPercentage ? '%' : ''}
+        </span>
+        {subLabel && <span className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-text-muted mt-1">{subLabel}</span>}
+      </div>
+    </div>
+  );
+};
+
+// --- Componente de Chamado Acordeão ---
+const ChamadoItem = ({ item }: any) => {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="bg-slate-50 dark:bg-background/50 rounded-lg border border-slate-100 dark:border-border/50 relative overflow-hidden transition-all duration-300">
+      <div className={`absolute left-0 top-3 bottom-3 w-1.5 rounded-r-md ${item.isLate ? 'bg-status-danger' : 'bg-accent-teal'}`}></div>
+      
+      <div 
+        className="flex justify-between items-center p-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-background transition-colors"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="pl-4">
+          <p className="font-bold text-sm text-slate-900 dark:text-text-main">{item.id}</p>
+          <p className="text-xs text-slate-500 dark:text-text-muted mt-0.5">{item.desc}</p>
+        </div>
+        <div className="text-right flex items-center space-x-3">
+          <div>
+            <p className={`font-bold text-sm ${item.isLate ? 'text-status-danger' : 'text-accent-teal'}`}>
+              {item.status}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-text-muted mt-0.5">{item.time}</p>
+          </div>
+          <div className="text-slate-400">
+            {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          </div>
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="px-5 pb-4 pt-1 ml-4 border-t border-slate-100 dark:border-border/50 animate-in slide-in-from-top-2">
+          <div className="flex flex-col gap-3 mt-3">
+            <div className="bg-white dark:bg-surface rounded border border-slate-100 dark:border-border p-3">
+              <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1 flex items-center"><Cpu size={12} className="mr-1"/> Peças Utilizadas</p>
+              <p className="text-sm font-medium text-slate-800 dark:text-text-main">
+                {item.pecasUtilizadas || 'Nenhuma peça consumida'}
+              </p>
+            </div>
+            <div className="bg-slate-100 dark:bg-background rounded border border-slate-200 dark:border-border/80 p-3">
+              <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Texto de Encerramento</p>
+              <p className="text-xs text-slate-700 dark:text-text-muted leading-relaxed italic">
+                "{item.textoEncerramento || 'Sem texto de encerramento'}"
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default function DashboardScreen() {
+  const { user } = useAuthStore();
+
+  const [metricas, setMetricas] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const applyData = (data: any) => {
+      const dadosTecnico = data.find((t: any) =>
+        (user?.nomeCompleto && t.tecnico.toLowerCase() === user.nomeCompleto.toLowerCase()) ||
+        (user?.matricula && String(t.matricula) === String(user.matricula))
+      );
+
+      if (dadosTecnico) {
+        setMetricas(dadosTecnico);
+      } else {
+        setMetricas({
+          pontosTotal: 0,
+          percentualSla: 0,
+          percentualReincidencia: 0,
+          posicaoRanking: '--',
+          ultimosChamados: [],
+          percentualEficienciaPecas: 0
+        });
+      }
+    };
+
+    const fetchMetricas = async () => {
+      try {
+        // 1. Carrega dados em cache para mostrar a tela rápido
+        const response = await api.get('/dashboard/ranking');
+        if (mounted) applyData(response.data);
+
+        // 2. Dispara recálculo silencioso no background
+        if (user?.matricula) {
+          api.post(`/dashboard/calcular-tecnico?matricula=${user.matricula}`)
+            .then(async () => {
+              const freshResponse = await api.get('/dashboard/ranking');
+              if (mounted) applyData(freshResponse.data);
+            })
+            .catch(e => console.error('Erro no recálculo em background:', e));
+        }
+
+      } catch (error) {
+        console.error('Erro ao buscar métricas do BD:', error);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    fetchMetricas();
+    
+    return () => {
+      mounted = false;
+    };
+  }, [user]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-[60vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-teal"></div>
+      </div>
+    );
+  }
+
+  const percentualConsumo = metricas?.percentualEficienciaPecas || 0;
+  const percentualSla = metricas?.percentualSla || 0;
+  const percentualReincidencia = metricas?.percentualReincidencia || 0;
+  const pontuacaoTotal = metricas?.pontosTotal || 0;
+  const eficienciaData = [
+    { name: 'Consumo', value: percentualConsumo },
+    { name: 'Restante', value: Math.max(100 - percentualConsumo, 0) },
+  ];
+
+  const chamados = metricas?.ultimosChamados || [];
+
+  return (
+    <div className="space-y-6 pb-6">
+
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-text-main">Dashboard de Performance</h1>
+          <p className="text-sm text-slate-500 dark:text-text-muted mt-1">
+            Acompanhe os seus indicadores e ranking em tempo real.
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          {metricas?.elegivel ? (
+            <button className="flex items-center space-x-2 bg-transparent border border-accent-emerald text-accent-emerald px-4 py-2 rounded-full font-medium text-sm hover:bg-accent-emerald/10 transition-colors">
+              <CheckCircle2 size={16} />
+              <span>Elegível para Premiação</span>
+            </button>
+          ) : (
+            <button className="flex items-center space-x-2 bg-transparent border border-status-danger text-status-danger px-4 py-2 rounded-full font-medium text-sm hover:bg-status-danger/10 transition-colors" title={metricas?.motivoInelegibilidade}>
+              <XCircle size={16} />
+              <span>Não Elegível</span>
+            </button>
+          )}
+          {metricas?.posicaoRanking && metricas.posicaoRanking !== '--' && (
+             <span className="text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full flex items-center shadow-sm">
+               <Medal size={12} className="mr-1 text-accent-teal" /> Ranking: {metricas.posicaoRanking}º Lugar
+             </span>
+          )}
+        </div>
+      </div>
+
+      {/* Top KPIs transformados em Destaque */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        
+        {/* Card Pontuação - SUPER DESTAQUE */}
+        <div 
+          onClick={() => setDetailsModalOpen(true)}
+          className="md:col-span-1 bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-800 dark:to-background rounded-positivo-lg p-6 border border-slate-700 shadow-xl flex flex-col items-center justify-center text-center relative overflow-hidden group cursor-pointer hover:border-accent-teal/50 hover:shadow-2xl hover:shadow-accent-teal/20 transition-all duration-300"
+        >
+          <div className="absolute -right-6 -top-6 text-slate-700/30 dark:text-slate-700/20 transform group-hover:scale-110 transition-transform duration-500">
+            <Award size={120} />
+          </div>
+          <h3 className="text-sm font-medium text-slate-300 mb-2 z-10 uppercase tracking-widest">Pontuação Total</h3>
+          <div className="flex items-baseline gap-1 z-10">
+            <span className="text-6xl font-black text-white">{pontuacaoTotal}</span>
+            <span className="text-lg text-slate-400 font-bold">/100</span>
+          </div>
+          <div className="mt-4 bg-white/10 backdrop-blur px-4 py-1.5 rounded-full z-10">
+             <p className="text-xs text-slate-200 font-medium flex items-center">
+               <TrendingUp size={14} className="mr-1 text-accent-emerald" /> 
+               Sua performance global
+             </p>
+          </div>
+        </div>
+
+        {/* Demais Cards - Menores e Lado a Lado */}
+        <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+          
+          {/* Card SLA */}
+          <div className="bg-white dark:bg-surface rounded-positivo-lg p-4 border border-slate-100 dark:border-border shadow-sm flex flex-col items-center text-center justify-center hover:border-accent-teal/30 transition-colors">
+            <h3 className="text-xs font-bold text-slate-500 dark:text-text-muted mb-1 uppercase tracking-wider">SLA On-site</h3>
+            <CircularProgress
+              value={percentualSla}
+              maxValue={100}
+              color="#00d8a6"
+              label={percentualSla.toFixed(1)}
+              isPercentage={true}
+            />
+            <p className="text-[10px] text-slate-400 mt-1">Meta: 90%</p>
+          </div>
+
+          {/* Card Reincidência */}
+          <div className="bg-white dark:bg-surface rounded-positivo-lg p-4 border border-slate-100 dark:border-border shadow-sm flex flex-col items-center text-center justify-center hover:border-status-danger/30 transition-colors">
+            <h3 className="text-xs font-bold text-slate-500 dark:text-text-muted mb-1 uppercase tracking-wider">Reincidência</h3>
+            <CircularProgress
+              value={percentualReincidencia}
+              maxValue={100}
+              color="#EF4444"
+              label={percentualReincidencia.toFixed(1)}
+              isPercentage={true}
+            />
+            <p className="text-[10px] text-slate-400 mt-1">Meta: {'<'} 7%</p>
+          </div>
+
+          {/* Card NPS */}
+          <div className="bg-white dark:bg-surface rounded-positivo-lg p-4 border border-slate-100 dark:border-border shadow-sm flex flex-col items-center text-center justify-center hover:border-accent-blue/30 transition-colors">
+            <h3 className="text-xs font-bold text-slate-500 dark:text-text-muted mb-1 uppercase tracking-wider">Satisfação (NPS)</h3>
+            <CircularProgress
+              value={metricas?.npsScore || 0}
+              maxValue={100}
+              color="#3b82f6"
+              label={(metricas?.npsScore || 0).toFixed(0)}
+              isPercentage={true}
+            />
+            <p className="text-[10px] text-slate-400 mt-1">Gatilho Ouro</p>
+          </div>
+
+        </div>
+      </div>
+
+      {/* Grid Inferior */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* Últimos Chamados */}
+        <div className="lg:col-span-2 bg-white dark:bg-surface p-6 rounded-positivo-lg shadow-sm border border-slate-100 dark:border-border">
+          <h3 className="text-base font-bold text-slate-900 dark:text-text-main mb-4">Últimos Chamados Apurados</h3>
+          <div className="space-y-3">
+            {chamados.map((item: any) => (
+              <ChamadoItem key={item.id} item={item} />
+            ))}
+          </div>
+        </div>
+
+        {/* Eficiência de Peças */}
+        <div className="bg-white dark:bg-surface p-6 rounded-positivo-lg shadow-sm border border-slate-100 dark:border-border flex flex-col items-center">
+          <h3 className="text-base font-bold text-slate-900 dark:text-text-main w-full mb-2">Eficiência de Peças</h3>
+
+          <div className="relative w-48 h-48 mt-4">
+            {percentualConsumo === 0 ? (
+               <div className="absolute inset-0 flex flex-col items-center justify-center bg-accent-teal/10 rounded-full border border-accent-teal/20">
+                 <CheckCircle2 size={40} className="text-accent-teal mb-2" />
+                 <span className="text-2xl font-bold text-accent-teal">0%</span>
+                 <span className="text-[10px] text-slate-500 font-medium">Consumo</span>
+               </div>
+            ) : (
+               <>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={eficienciaData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      startAngle={90}
+                      endAngle={-270}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      <Cell key="consumo" fill="#00E5FF" />
+                      <Cell key="restante" fill="#1e293b" />
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+
+                {/* Texto no centro do Donut */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-3xl font-bold text-slate-900 dark:text-text-main">{percentualConsumo}%</span>
+                  <span className="text-xs text-slate-500 dark:text-text-muted">Consumo</span>
+                </div>
+               </>
+            )}
+          </div>
+
+          <div className="mt-6 text-center text-sm">
+            <p className="text-slate-500 dark:text-text-muted">
+              Você está {percentualConsumo <= 25 ? 'dentro' : 'acima'} da meta (≤ 25%)
+            </p>
+            {percentualConsumo <= 25 && (
+              <p className="text-accent-teal font-medium mt-1">Excelente! +12.5 Pts</p>
+            )}
+          </div>
+        </div>
+
+      </div>
+
+      {/* Modal de Detalhes da Pontuação */}
+      {detailsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-surface rounded-xl shadow-2xl w-full max-w-4xl overflow-hidden border border-slate-200 dark:border-border animate-in zoom-in-95">
+            <div className="p-6 border-b border-slate-200 dark:border-border flex justify-between items-center bg-slate-50 dark:bg-background/50">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-text-main flex items-center gap-2">
+                <Award className="text-accent-teal" /> Detalhamento da Pontuação
+              </h2>
+              <button onClick={() => setDetailsModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                <XCircle size={24} />
+              </button>
+            </div>
+            <div className="p-6 overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[800px]">
+                <thead>
+                  <tr className="bg-slate-100 dark:bg-background text-slate-600 dark:text-text-muted text-sm font-bold uppercase tracking-wider">
+                    <th className="p-4 border-b border-slate-200 dark:border-border rounded-tl-lg">Mês</th>
+                    <th className="p-4 border-b border-slate-200 dark:border-border text-center">SLA</th>
+                    <th className="p-4 border-b border-slate-200 dark:border-border text-center">Reincidência</th>
+                    <th className="p-4 border-b border-slate-200 dark:border-border text-center">Perdas</th>
+                    <th className="p-4 border-b border-slate-200 dark:border-border text-center">NPS</th>
+                    <th className="p-4 border-b border-slate-200 dark:border-border text-center">Peças</th>
+                    <th className="p-4 border-b border-slate-200 dark:border-border text-center">Total</th>
+                    <th className="p-4 border-b border-slate-200 dark:border-border text-center rounded-tr-lg">Elegibilidade</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-border/50 bg-white dark:bg-surface">
+                  {metricas?.historico?.map((h: any, index: number) => {
+                    const isMedia = h.mes === 'Média Final';
+                    return (
+                      <tr key={index} className={`hover:bg-slate-50 dark:hover:bg-background/50 transition-colors ${isMedia ? 'bg-slate-50 dark:bg-background/30' : ''}`}>
+                        <td className="p-4 font-bold text-slate-900 dark:text-text-main flex items-center gap-2">
+                          {isMedia ? <TrendingUp size={16} className="text-accent-teal"/> : null}
+                          {h.mes}
+                        </td>
+                        <td className="p-4 text-center">
+                          <div className="font-bold text-slate-800 dark:text-text-main">{h.percentualSla?.toFixed(2)}%</div>
+                          <div className="text-xs font-medium text-accent-teal bg-accent-teal/10 px-2 py-0.5 rounded-full inline-block mt-1">{h.pontosSla} pts</div>
+                        </td>
+                        <td className="p-4 text-center">
+                          <div className="font-bold text-slate-800 dark:text-text-main">{h.percentualReincidencia?.toFixed(2)}%</div>
+                          <div className="text-xs font-medium text-accent-teal bg-accent-teal/10 px-2 py-0.5 rounded-full inline-block mt-1">{h.pontosReincidencia} pts</div>
+                        </td>
+                        <td className="p-4 text-center">
+                          <div className="text-xs font-medium text-status-danger bg-status-danger/10 px-2 py-0.5 rounded-full inline-block mt-1">{h.pontosPerdidos} pts</div>
+                        </td>
+                        <td className="p-4 text-center">
+                          <div className="font-bold text-slate-800 dark:text-text-main">{h.npsScore?.toFixed(2)}%</div>
+                          <div className="text-xs font-medium text-accent-teal bg-accent-teal/10 px-2 py-0.5 rounded-full inline-block mt-1">{h.pontosNps} pts</div>
+                        </td>
+                        <td className="p-4 text-center">
+                          <div className="font-bold text-slate-800 dark:text-text-main">{h.percentualEficienciaPecas?.toFixed(2)}%</div>
+                          <div className="text-xs font-medium text-accent-teal bg-accent-teal/10 px-2 py-0.5 rounded-full inline-block mt-1">{h.pontosPecas} pts</div>
+                        </td>
+                        <td className="p-4 text-center">
+                          <div className="text-2xl font-black text-slate-900 dark:text-text-main">{h.pontosTotal}</div>
+                          <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Pontos</div>
+                        </td>
+                        <td className="p-4 text-center">
+                          {h.elegivel ? (
+                            <span className="bg-accent-emerald text-white text-xs font-bold px-3 py-1.5 rounded-full inline-flex items-center gap-1 shadow-sm"><CheckCircle2 size={14}/> Elegível</span>
+                          ) : (
+                            <span className="bg-status-danger text-white text-xs font-bold px-3 py-1.5 rounded-full inline-flex items-center gap-1 shadow-sm" title={h.motivoInelegibilidade}><XCircle size={14}/> Inelegível</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="p-4 bg-slate-50 dark:bg-background/80 border-t border-slate-200 dark:border-border flex justify-end">
+              <button onClick={() => setDetailsModalOpen(false)} className="bg-slate-800 hover:bg-slate-900 text-white px-6 py-2 rounded-lg font-medium transition-colors shadow-md hover:shadow-lg focus:ring-2 focus:ring-slate-400 focus:outline-none">
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
