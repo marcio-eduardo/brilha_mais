@@ -1,8 +1,6 @@
 package br.com.positivo.brilhamais.controllers;
 
-import br.com.positivo.brilhamais.dto.AuthRequest;
-import br.com.positivo.brilhamais.dto.AuthResponse;
-import br.com.positivo.brilhamais.dto.ChangePasswordRequest;
+import br.com.positivo.brilhamais.dto.*;
 import br.com.positivo.brilhamais.services.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,5 +34,15 @@ public class AuthController {
         authService.changePassword(matricula, request.getNovaSenha());
         
         return ResponseEntity.ok("Senha alterada com sucesso");
+    }
+
+    @PostMapping("/verificar-tecnico")
+    public ResponseEntity<VerificarTecnicoResponse> verificarTecnico(@Valid @RequestBody VerificarTecnicoRequest request) {
+        return ResponseEntity.ok(authService.verificarTecnico(request));
+    }
+
+    @PostMapping("/vincular-matricula")
+    public ResponseEntity<AuthResponse> vincularMatricula(@Valid @RequestBody VincularMatriculaRequest request) {
+        return ResponseEntity.ok(authService.vincularMatricula(request));
     }
 }

@@ -17,17 +17,7 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     @Transactional
-    public void run(String... args) throws Exception {
-        // Garantir que todos os técnicos importados tenham uma senha padrão inicial (ex: 12345)
-        var tecnicos = tecnicoRepository.findAll();
-        for (Tecnico t : tecnicos) {
-            if (t.getSenha() == null || t.getSenha().isEmpty()) {
-                t.setSenha(passwordEncoder.encode("12345"));
-                t.setIsPrimeiroAcesso(true);
-                tecnicoRepository.save(t);
-            }
-        }
-
+        public void run(String... args) throws Exception {
         // Criar ou Atualizar usuário master '72916'
         Tecnico admin = tecnicoRepository.findByMatricula("72916").orElse(null);
         if (admin == null) {
@@ -36,6 +26,16 @@ public class DataSeeder implements CommandLineRunner {
                     .nomeCompleto("Administrador Master")
                     .ativo(true)
                     .build();
+        }
+
+        // LIMPEZA TEMPORÁRIA DE TESTE (Para limpar a matrícula do Marcelo Ladi)
+        var marcelo = tecnicoRepository.findByMatricula("71066").orElse(null);
+        if (marcelo != null) {
+            marcelo.setMatricula(null);
+            marcelo.setSenha(null);
+            marcelo.setIsPrimeiroAcesso(true);
+            tecnicoRepository.save(marcelo);
+            System.out.println("🔄 Matrícula do Marcelo Ladi (71066) limpa para testes.");
         }
         
         // Forçar as credenciais e cargo de admin para o 72916
