@@ -46,53 +46,97 @@ const CircularProgress = ({ value, maxValue, color, label, subLabel, isPercentag
   );
 };
 
-// --- Componente de Chamado Acordeão ---
+// --- Componente de Chamado (com Modal) ---
 const ChamadoItem = ({ item }: any) => {
-  const [expanded, setExpanded] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   return (
-    <div className="bg-slate-50 dark:bg-background/50 rounded-lg border border-slate-100 dark:border-border/50 relative overflow-hidden transition-all duration-300">
-      <div className={`absolute left-0 top-3 bottom-3 w-1.5 rounded-r-md ${item.isLate ? 'bg-status-danger' : 'bg-accent-teal'}`}></div>
-      
+    <>
       <div 
-        className="flex justify-between items-center p-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-background transition-colors"
-        onClick={() => setExpanded(!expanded)}
+        className="bg-slate-50 dark:bg-background/50 rounded-lg border border-slate-100 dark:border-border/50 relative overflow-hidden transition-all duration-300 hover:scale-[1.01] hover:shadow-md cursor-pointer"
+        onClick={() => setModalOpen(true)}
       >
-        <div className="pl-4">
-          <p className="font-bold text-sm text-slate-900 dark:text-text-main">{item.id}</p>
-          <p className="text-xs text-slate-500 dark:text-text-muted mt-0.5">{item.desc}</p>
-        </div>
-        <div className="text-right flex items-center space-x-3">
-          <div>
-            <p className={`font-bold text-sm ${item.isLate ? 'text-status-danger' : 'text-accent-teal'}`}>
-              {item.status}
-            </p>
-            <p className="text-xs text-slate-500 dark:text-text-muted mt-0.5">{item.time}</p>
+        <div className={`absolute left-0 top-3 bottom-3 w-1.5 rounded-r-md ${item.isLate ? 'bg-status-danger' : 'bg-accent-teal'}`}></div>
+        
+        <div className="flex justify-between items-center p-4">
+          <div className="pl-4">
+            <p className="font-bold text-sm text-slate-900 dark:text-text-main">{item.id}</p>
+            <p className="text-xs text-slate-500 dark:text-text-muted mt-0.5">{item.desc}</p>
           </div>
-          <div className="text-slate-400">
-            {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          <div className="text-right flex items-center space-x-3">
+            <div>
+              <p className={`font-bold text-sm ${item.isLate ? 'text-status-danger' : 'text-accent-teal'}`}>
+                {item.status}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-text-muted mt-0.5">{item.time}</p>
+            </div>
           </div>
         </div>
       </div>
 
-      {expanded && (
-        <div className="px-5 pb-4 pt-1 ml-4 border-t border-slate-100 dark:border-border/50 animate-in slide-in-from-top-2">
-          <div className="flex flex-col gap-3 mt-3">
-            <div className="bg-white dark:bg-surface rounded border border-slate-100 dark:border-border p-3">
-              <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1 flex items-center"><Cpu size={12} className="mr-1"/> Peças Utilizadas</p>
-              <p className="text-sm font-medium text-slate-800 dark:text-text-main">
-                {item.pecasUtilizadas || 'Nenhuma peça consumida'}
-              </p>
+      {/* Modal Overlay */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setModalOpen(false)}>
+          {/* Modal Content */}
+          <div 
+            className="bg-white dark:bg-surface rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className={`px-6 py-4 flex justify-between items-center text-white ${item.isLate ? 'bg-status-danger' : 'bg-accent-teal'}`}>
+              <div>
+                <h3 className="font-bold text-lg">{item.id}</h3>
+                <p className="text-xs opacity-90">{item.desc}</p>
+              </div>
+              <button onClick={() => setModalOpen(false)} className="text-white hover:text-white/80 transition-colors">
+                <XCircle size={24} />
+              </button>
             </div>
-            <div className="bg-slate-100 dark:bg-background rounded border border-slate-200 dark:border-border/80 p-3">
-              <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Texto de Encerramento</p>
-              <p className="text-xs text-slate-700 dark:text-text-muted leading-relaxed italic">
-                "{item.textoEncerramento || 'Sem texto de encerramento'}"
-              </p>
+
+            {/* Body */}
+            <div className="p-6 space-y-6">
+              <div className="flex justify-between items-center border-b border-slate-100 dark:border-border pb-4">
+                <div>
+                  <p className="text-xs text-slate-500 dark:text-text-muted font-medium uppercase tracking-wider">Status SLA</p>
+                  <p className={`font-bold mt-1 ${item.isLate ? 'text-status-danger' : 'text-accent-teal'}`}>{item.status}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-slate-500 dark:text-text-muted font-medium uppercase tracking-wider">Fechamento</p>
+                  <p className="font-bold mt-1 text-slate-800 dark:text-text-main">{item.time}</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs uppercase font-bold tracking-wider text-slate-500 mb-2 flex items-center"><Cpu size={14} className="mr-1.5"/> Peças Utilizadas</p>
+                <div className="bg-slate-50 dark:bg-background rounded-lg border border-slate-100 dark:border-border p-3">
+                  <p className="text-sm font-medium text-slate-800 dark:text-text-main">
+                    {item.pecasUtilizadas || 'Nenhuma peça consumida'}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs uppercase font-bold tracking-wider text-slate-500 mb-2">Texto de Encerramento</p>
+                <div className="bg-slate-100 dark:bg-background rounded-lg border border-slate-200 dark:border-border/80 p-4">
+                  <p className="text-sm text-slate-700 dark:text-text-muted leading-relaxed italic">
+                    "{item.textoEncerramento || 'Sem texto de encerramento'}"
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Footer */}
+            <div className="px-6 py-4 bg-slate-50 dark:bg-background border-t border-slate-100 dark:border-border flex justify-end">
+              <button 
+                onClick={() => setModalOpen(false)}
+                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white rounded-lg text-sm font-bold transition-colors"
+              >
+                Fechar
+              </button>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
@@ -100,6 +144,7 @@ export default function DashboardScreen() {
   const { user } = useAuthStore();
 
   const [metricas, setMetricas] = useState<any>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string>('Média Final');
   const [loading, setLoading] = useState(true);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
 
@@ -156,6 +201,14 @@ export default function DashboardScreen() {
     };
   }, [user]);
 
+  const displayMetricas = React.useMemo(() => {
+    if (!metricas) return null;
+    if (selectedMonth === 'Média Final') return metricas;
+    const monthData = metricas.historico?.find((h: any) => h.mes === selectedMonth);
+    if (!monthData) return metricas;
+    return { ...metricas, ...monthData };
+  }, [metricas, selectedMonth]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-[60vh]">
@@ -164,16 +217,16 @@ export default function DashboardScreen() {
     );
   }
 
-  const percentualConsumo = metricas?.percentualEficienciaPecas || 0;
-  const percentualSla = metricas?.percentualSla || 0;
-  const percentualReincidencia = metricas?.percentualReincidencia || 0;
-  const pontuacaoTotal = metricas?.pontosTotal || 0;
+  const percentualConsumo = displayMetricas?.percentualEficienciaPecas || 0;
+  const percentualSla = displayMetricas?.percentualSla || 0;
+  const percentualReincidencia = displayMetricas?.percentualReincidencia || 0;
+  const pontuacaoTotal = displayMetricas?.pontosTotal || 0;
   const eficienciaData = [
     { name: 'Consumo', value: percentualConsumo },
     { name: 'Restante', value: Math.max(100 - percentualConsumo, 0) },
   ];
 
-  const chamados = metricas?.ultimosChamados || [];
+  const chamados = displayMetricas?.ultimosChamados || [];
 
   return (
     <div className="space-y-6 pb-6">
@@ -186,32 +239,53 @@ export default function DashboardScreen() {
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">
-          {metricas?.elegivel ? (
+          {displayMetricas?.elegivel ? (
             <button className="flex items-center space-x-2 bg-transparent border border-accent-emerald text-accent-emerald px-4 py-2 rounded-full font-medium text-sm hover:bg-accent-emerald/10 transition-colors">
               <CheckCircle2 size={16} />
               <span>Elegível para Premiação</span>
             </button>
           ) : (
-            <button className="flex items-center space-x-2 bg-transparent border border-status-danger text-status-danger px-4 py-2 rounded-full font-medium text-sm hover:bg-status-danger/10 transition-colors" title={metricas?.motivoInelegibilidade}>
+            <button className="flex items-center space-x-2 bg-transparent border border-status-danger text-status-danger px-4 py-2 rounded-full font-medium text-sm hover:bg-status-danger/10 transition-colors" title={displayMetricas?.motivoInelegibilidade}>
               <XCircle size={16} />
               <span>Não Elegível</span>
             </button>
           )}
-          {metricas?.posicaoRanking && metricas.posicaoRanking !== '--' && (
+          {displayMetricas?.posicaoRanking && displayMetricas.posicaoRanking !== '--' && (
              <span className="text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full flex items-center shadow-sm">
-               <Medal size={12} className="mr-1 text-accent-teal" /> Ranking: {metricas.posicaoRanking}º Lugar
+               <Medal size={12} className="mr-1 text-accent-teal" /> Ranking: {displayMetricas.posicaoRanking}º Lugar
              </span>
           )}
         </div>
       </div>
 
-      {/* Top KPIs transformados em Destaque */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      {/* Seletor de Mês (Segmented Control) */}
+      {metricas?.historico && metricas.historico.length > 0 && (
+        <div className="flex justify-center mt-2 mb-8">
+          <div className="inline-flex bg-slate-100 dark:bg-background/80 p-1.5 rounded-full border border-slate-200 dark:border-border/50 shadow-inner overflow-x-auto max-w-full">
+            {['Média Final', ...metricas.historico.map((h: any) => h.mes).filter((m: string) => m !== 'Média Final')].map((monthOption: string) => (
+              <button
+                key={monthOption}
+                onClick={() => setSelectedMonth(monthOption)}
+                className={`px-6 py-2 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap ${
+                  selectedMonth === monthOption
+                    ? 'bg-white dark:bg-surface text-accent-teal shadow-md border border-slate-200/50 dark:border-border transform scale-105'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-surface/50'
+                }`}
+              >
+                {monthOption === 'Média Final' ? 'Campanha Inteira' : monthOption}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Top Grid: Pontuação & Últimos Chamados */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         
-        {/* Card Pontuação - SUPER DESTAQUE */}
+        {/* Card Pontuação Total */}
         <div 
           onClick={() => setDetailsModalOpen(true)}
-          className="md:col-span-1 bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-800 dark:to-background rounded-positivo-lg p-6 border border-slate-700 shadow-xl flex flex-col items-center justify-center text-center relative overflow-hidden group cursor-pointer hover:border-accent-teal/50 hover:shadow-2xl hover:shadow-accent-teal/20 transition-all duration-300"
+          className="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-800 dark:to-background rounded-positivo-lg p-6 border border-slate-700 shadow-xl flex flex-col items-center justify-center text-center relative overflow-hidden group cursor-pointer hover:border-accent-teal/50 hover:shadow-2xl hover:shadow-accent-teal/20 transition-all duration-300"
         >
           <div className="absolute -right-6 -top-6 text-slate-700/30 dark:text-slate-700/20 transform group-hover:scale-110 transition-transform duration-500">
             <Award size={120} />
@@ -229,54 +303,6 @@ export default function DashboardScreen() {
           </div>
         </div>
 
-        {/* Demais Cards - Menores e Lado a Lado */}
-        <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
-          
-          {/* Card SLA */}
-          <div className="bg-white dark:bg-surface rounded-positivo-lg p-4 border border-slate-100 dark:border-border shadow-sm flex flex-col items-center text-center justify-center hover:border-accent-teal/30 transition-colors">
-            <h3 className="text-xs font-bold text-slate-500 dark:text-text-muted mb-1 uppercase tracking-wider">SLA On-site</h3>
-            <CircularProgress
-              value={percentualSla}
-              maxValue={100}
-              color="#00d8a6"
-              label={percentualSla.toFixed(1)}
-              isPercentage={true}
-            />
-            <p className="text-[10px] text-slate-400 mt-1">Meta: 90%</p>
-          </div>
-
-          {/* Card Reincidência */}
-          <div className="bg-white dark:bg-surface rounded-positivo-lg p-4 border border-slate-100 dark:border-border shadow-sm flex flex-col items-center text-center justify-center hover:border-status-danger/30 transition-colors">
-            <h3 className="text-xs font-bold text-slate-500 dark:text-text-muted mb-1 uppercase tracking-wider">Reincidência</h3>
-            <CircularProgress
-              value={percentualReincidencia}
-              maxValue={100}
-              color="#EF4444"
-              label={percentualReincidencia.toFixed(1)}
-              isPercentage={true}
-            />
-            <p className="text-[10px] text-slate-400 mt-1">Meta: {'<'} 7%</p>
-          </div>
-
-          {/* Card NPS */}
-          <div className="bg-white dark:bg-surface rounded-positivo-lg p-4 border border-slate-100 dark:border-border shadow-sm flex flex-col items-center text-center justify-center hover:border-accent-blue/30 transition-colors">
-            <h3 className="text-xs font-bold text-slate-500 dark:text-text-muted mb-1 uppercase tracking-wider">Satisfação (NPS)</h3>
-            <CircularProgress
-              value={metricas?.npsScore || 0}
-              maxValue={100}
-              color="#3b82f6"
-              label={(metricas?.npsScore || 0).toFixed(0)}
-              isPercentage={true}
-            />
-            <p className="text-[10px] text-slate-400 mt-1">Gatilho Ouro</p>
-          </div>
-
-        </div>
-      </div>
-
-      {/* Grid Inferior */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
         {/* Últimos Chamados */}
         <div className="lg:col-span-2 bg-white dark:bg-surface p-6 rounded-positivo-lg shadow-sm border border-slate-100 dark:border-border">
           <h3 className="text-base font-bold text-slate-900 dark:text-text-main mb-4">Últimos Chamados Apurados</h3>
@@ -286,17 +312,59 @@ export default function DashboardScreen() {
             ))}
           </div>
         </div>
+      </div>
 
-        {/* Eficiência de Peças */}
-        <div className="bg-white dark:bg-surface p-6 rounded-positivo-lg shadow-sm border border-slate-100 dark:border-border flex flex-col items-center">
-          <h3 className="text-base font-bold text-slate-900 dark:text-text-main w-full mb-2">Eficiência de Peças</h3>
+      {/* Grid Inferior: 4 KPIs Lado a Lado */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        
+        {/* Card SLA */}
+        <div className="bg-white dark:bg-surface rounded-positivo-lg p-4 border border-slate-100 dark:border-border shadow-sm flex flex-col items-center text-center justify-center hover:border-accent-teal/30 transition-colors">
+          <h3 className="text-xs font-bold text-slate-500 dark:text-text-muted mb-1 uppercase tracking-wider">SLA On-site</h3>
+          <CircularProgress
+            value={percentualSla}
+            maxValue={100}
+            color="#00d8a6"
+            label={percentualSla.toFixed(1)}
+            isPercentage={true}
+          />
+          <p className="text-[10px] text-slate-400 mt-1">Meta: 90%</p>
+        </div>
 
-          <div className="relative w-48 h-48 mt-4">
+        {/* Card Reincidência */}
+        <div className="bg-white dark:bg-surface rounded-positivo-lg p-4 border border-slate-100 dark:border-border shadow-sm flex flex-col items-center text-center justify-center hover:border-status-danger/30 transition-colors">
+          <h3 className="text-xs font-bold text-slate-500 dark:text-text-muted mb-1 uppercase tracking-wider">Reincidência</h3>
+          <CircularProgress
+            value={percentualReincidencia}
+            maxValue={100}
+            color="#EF4444"
+            label={percentualReincidencia.toFixed(1)}
+            isPercentage={true}
+          />
+          <p className="text-[10px] text-slate-400 mt-1">Meta: {'<'} 7%</p>
+        </div>
+
+        {/* Card NPS */}
+        <div className="bg-white dark:bg-surface rounded-positivo-lg p-4 border border-slate-100 dark:border-border shadow-sm flex flex-col items-center text-center justify-center hover:border-accent-blue/30 transition-colors">
+          <h3 className="text-xs font-bold text-slate-500 dark:text-text-muted mb-1 uppercase tracking-wider">Satisfação (NPS)</h3>
+          <CircularProgress
+            value={displayMetricas?.npsScore || 0}
+            maxValue={100}
+            color="#3b82f6"
+            label={(displayMetricas?.npsScore || 0).toFixed(0)}
+            isPercentage={true}
+          />
+          <p className="text-[10px] text-slate-400 mt-1">Gatilho Ouro</p>
+        </div>
+
+        {/* Card Uso de Peças */}
+        <div className="bg-white dark:bg-surface rounded-positivo-lg p-4 border border-slate-100 dark:border-border shadow-sm flex flex-col items-center text-center justify-center hover:border-cyan-400/30 transition-colors">
+          <h3 className="text-xs font-bold text-slate-500 dark:text-text-muted mb-1 uppercase tracking-wider">Uso de Peças</h3>
+          
+          <div className="relative w-36 h-36 mx-auto mb-2 mt-2">
             {percentualConsumo === 0 ? (
                <div className="absolute inset-0 flex flex-col items-center justify-center bg-accent-teal/10 rounded-full border border-accent-teal/20">
-                 <CheckCircle2 size={40} className="text-accent-teal mb-2" />
-                 <span className="text-2xl font-bold text-accent-teal">0%</span>
-                 <span className="text-[10px] text-slate-500 font-medium">Consumo</span>
+                 <CheckCircle2 size={32} className="text-accent-teal mb-1" />
+                 <span className="text-xl font-bold text-accent-teal">0%</span>
                </div>
             ) : (
                <>
@@ -306,36 +374,27 @@ export default function DashboardScreen() {
                       data={eficienciaData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
+                      innerRadius={46}
+                      outerRadius={56}
                       startAngle={90}
                       endAngle={-270}
                       dataKey="value"
                       stroke="none"
                     >
                       <Cell key="consumo" fill="#00E5FF" />
-                      <Cell key="restante" fill="#1e293b" />
+                      <Cell key="restante" fill="#f1f5f9" className="dark:fill-slate-800" />
                     </Pie>
                   </PieChart>
                 </ResponsiveContainer>
 
                 {/* Texto no centro do Donut */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-3xl font-bold text-slate-900 dark:text-text-main">{percentualConsumo}%</span>
-                  <span className="text-xs text-slate-500 dark:text-text-muted">Consumo</span>
+                  <span className="text-2xl font-bold text-slate-900 dark:text-text-main">{percentualConsumo}%</span>
                 </div>
                </>
             )}
           </div>
-
-          <div className="mt-6 text-center text-sm">
-            <p className="text-slate-500 dark:text-text-muted">
-              Você está {percentualConsumo <= 25 ? 'dentro' : 'acima'} da meta (≤ 25%)
-            </p>
-            {percentualConsumo <= 25 && (
-              <p className="text-accent-teal font-medium mt-1">Excelente! +12.5 Pts</p>
-            )}
-          </div>
+          <p className="text-[10px] text-slate-400 mt-1">Meta: ≤ 25%</p>
         </div>
 
       </div>
@@ -377,22 +436,23 @@ export default function DashboardScreen() {
                         </td>
                         <td className="p-4 text-center">
                           <div className="font-bold text-slate-800 dark:text-text-main">{h.percentualSla?.toFixed(2)}%</div>
-                          <div className="text-xs font-medium text-accent-teal bg-accent-teal/10 px-2 py-0.5 rounded-full inline-block mt-1">{h.pontosSla} pts</div>
+                          <div className="text-xs font-medium text-accent-teal bg-accent-teal/10 px-2 py-0.5 rounded-full inline-block mt-1 whitespace-nowrap">{h.pontosSla} pts</div>
                         </td>
                         <td className="p-4 text-center">
                           <div className="font-bold text-slate-800 dark:text-text-main">{h.percentualReincidencia?.toFixed(2)}%</div>
-                          <div className="text-xs font-medium text-accent-teal bg-accent-teal/10 px-2 py-0.5 rounded-full inline-block mt-1">{h.pontosReincidencia} pts</div>
+                          <div className="text-xs font-medium text-accent-teal bg-accent-teal/10 px-2 py-0.5 rounded-full inline-block mt-1 whitespace-nowrap">{h.pontosReincidencia} pts</div>
                         </td>
                         <td className="p-4 text-center">
-                          <div className="text-xs font-medium text-status-danger bg-status-danger/10 px-2 py-0.5 rounded-full inline-block mt-1">{h.pontosPerdidos} pts</div>
+                          <div className="font-bold text-slate-800 dark:text-text-main">{h.percentualPerdidos?.toFixed(2)}%</div>
+                          <div className="text-xs font-medium text-accent-teal bg-accent-teal/10 px-2 py-0.5 rounded-full inline-block mt-1 whitespace-nowrap">{h.pontosPerdidos} pts</div>
                         </td>
                         <td className="p-4 text-center">
                           <div className="font-bold text-slate-800 dark:text-text-main">{h.npsScore?.toFixed(2)}%</div>
-                          <div className="text-xs font-medium text-accent-teal bg-accent-teal/10 px-2 py-0.5 rounded-full inline-block mt-1">{h.pontosNps} pts</div>
+                          <div className="text-xs font-medium text-accent-teal bg-accent-teal/10 px-2 py-0.5 rounded-full inline-block mt-1 whitespace-nowrap">{h.pontosNps} pts</div>
                         </td>
                         <td className="p-4 text-center">
                           <div className="font-bold text-slate-800 dark:text-text-main">{h.percentualEficienciaPecas?.toFixed(2)}%</div>
-                          <div className="text-xs font-medium text-accent-teal bg-accent-teal/10 px-2 py-0.5 rounded-full inline-block mt-1">{h.pontosPecas} pts</div>
+                          <div className="text-xs font-medium text-accent-teal bg-accent-teal/10 px-2 py-0.5 rounded-full inline-block mt-1 whitespace-nowrap">{h.pontosPecas} pts</div>
                         </td>
                         <td className="p-4 text-center">
                           <div className="text-2xl font-black text-slate-900 dark:text-text-main">{h.pontosTotal}</div>

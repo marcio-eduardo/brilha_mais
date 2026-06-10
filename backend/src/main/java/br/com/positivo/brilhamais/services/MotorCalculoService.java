@@ -316,6 +316,9 @@ public class MotorCalculoService {
             } else if (percReincEquipe > 10) {
                 apuracao.setStatusElegibilidade(false);
                 apuracao.setMotivoInelegibilidade("Reincidência Equipe Acima do Limite (>10%)");
+            } else if (totalPontos < 70) {
+                apuracao.setStatusElegibilidade(false);
+                apuracao.setMotivoInelegibilidade("Pontuação final abaixo de 70 pontos");
             } else {
                 apuracao.setStatusElegibilidade(true);
                 apuracao.setMotivoInelegibilidade(null);

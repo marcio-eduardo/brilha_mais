@@ -19,6 +19,7 @@ public class HistoricoDTO {
     private Double pontosNps;
     private Double percentualEficienciaPecas;
     private Double pontosPecas;
+    private Double percentualPerdidos;
     private Double pontosPerdidos;
     private Integer pontosTotal;
     private Boolean elegivel;

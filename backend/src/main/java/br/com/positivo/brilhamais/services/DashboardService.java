@@ -65,15 +65,20 @@ public class DashboardService {
         // --- BUSCA OTIMIZADA DE PEÇAS (Evita N+1) ---
         List<Long> chamadosIds = todosChamados.stream().map(Chamado::getNumeroChamado).collect(Collectors.toList());
         Map<Long, String> pecasPorChamado = new java.util.HashMap<>();
+        Map<Long, String> textoEncerramentoPorChamado = new java.util.HashMap<>();
         if (!chamadosIds.isEmpty()) {
             // Divide in chunks if necessary, but usually recent tickets for ranking are not huge per month.
             // Using a simple IN clause string building for JdbcTemplate (since IN with List is easier with NamedParameterJdbcTemplate, but we can do a simple join)
             String inSql = String.join(",", java.util.Collections.nCopies(chamadosIds.size(), "?"));
-            String pecasQuery = "SELECT numero_chamado, descricao_peca FROM tb_consumo_peca WHERE numero_chamado IN (" + inSql + ")";
+            String pecasQuery = "SELECT numero_chamado, descricao_peca, texto_encerrado FROM tb_consumo_peca WHERE numero_chamado IN (" + inSql + ")";
             jdbcTemplate.query(pecasQuery, chamadosIds.toArray(), (rs) -> {
                 Long numeroChamado = rs.getLong("numero_chamado");
                 String peca = rs.getString("descricao_peca");
+                String texto = rs.getString("texto_encerrado");
                 pecasPorChamado.merge(numeroChamado, peca, (old, val) -> old + ", " + val);
+                if (texto != null && !texto.isEmpty()) {
+                    textoEncerramentoPorChamado.put(numeroChamado, texto);
+                }
             });
         }
         // ---------------------------------------------
@@ -101,6 +106,7 @@ public class DashboardService {
                         .pontosNps(h.getPontosNps() != null ? h.getPontosNps() : 0.0)
                         .percentualEficienciaPecas(h.getAtingimentoPecas() != null ? h.getAtingimentoPecas().multiply(new BigDecimal("100")).doubleValue() : 0.0)
                         .pontosPecas(h.getPontosPecas() != null ? h.getPontosPecas() : 0.0)
+                        .percentualPerdidos(h.getAtingimentoPerdidos() != null ? h.getAtingimentoPerdidos().multiply(new BigDecimal("100")).doubleValue() : 0.0)
                         .pontosPerdidos(h.getPontosPerdidos() != null ? h.getPontosPerdidos() : 0.0)
                         .pontosTotal(h.getPontuacaoTotal() != null ? h.getPontuacaoTotal().intValue() : 0)
                         .elegivel(h.getStatusElegibilidade())
@@ -120,7 +126,7 @@ public class DashboardService {
                         .isLate("FORA".equalsIgnoreCase(c.getStatusSla()) || "Fora SLA".equalsIgnoreCase(c.getStatusSla()))
                         .time(c.getDataEncerramento() != null ? c.getDataEncerramento().format(formatterHora) : "")
                         .pecasUtilizadas(pecasPorChamado.getOrDefault(c.getNumeroChamado(), "Nenhuma peça consumida"))
-                        .textoEncerramento(c.getEncdesc() != null && !c.getEncdesc().isEmpty() ? c.getEncdesc() : (c.getClassificacaoChamado() != null ? c.getClassificacaoChamado() : "Sem texto de encerramento"))
+                        .textoEncerramento(textoEncerramentoPorChamado.containsKey(c.getNumeroChamado()) ? textoEncerramentoPorChamado.get(c.getNumeroChamado()) : (c.getEncdesc() != null && !c.getEncdesc().isEmpty() ? c.getEncdesc() : (c.getClassificacaoChamado() != null ? c.getClassificacaoChamado() : "Sem texto de encerramento")))
                         .build())
                 .collect(Collectors.toList());
 
@@ -128,6 +134,7 @@ public class DashboardService {
                     .posicaoRanking(posicao++)
                     .tecnico(apuracao.getTecnico().getNomeCompleto())
                     .pontosTotal(apuracao.getPontuacaoTotal() != null ? apuracao.getPontuacaoTotal().doubleValue() : 0.0)
+                    .percentualPerdidos(apuracao.getAtingimentoPerdidos() != null ? apuracao.getAtingimentoPerdidos().multiply(new BigDecimal("100")) : BigDecimal.ZERO)
                     .pontosPerdidos(apuracao.getPontosPerdidos() != null ? apuracao.getPontosPerdidos() : 0.0)
                     .percentualSla(apuracao.getAtingimentoSla() != null ? apuracao.getAtingimentoSla().multiply(new BigDecimal("100")) : BigDecimal.ZERO)
                     .pontosSla(apuracao.getPontosSla() != null ? apuracao.getPontosSla() : 0.0)

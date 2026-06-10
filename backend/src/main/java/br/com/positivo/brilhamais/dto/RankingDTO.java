@@ -18,6 +18,7 @@ public class RankingDTO {
     
     private Double pontosTotal;
     
+    private BigDecimal percentualPerdidos;
     private Double pontosPerdidos;
     
     private BigDecimal percentualSla;
