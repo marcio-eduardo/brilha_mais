@@ -1,0 +1,22 @@
+CREATE TABLE tb_resultado_provisorio (
+    id_resultado SERIAL PRIMARY KEY,
+    operacao_tecnico VARCHAR(255) NOT NULL,
+    mes_campanha VARCHAR(50) NOT NULL,
+    sla_equipe NUMERIC(10,4),
+    pontos_sla_equipe NUMERIC(10,4),
+    perdas_sla_transf NUMERIC(10,4),
+    pontos_sla_transf NUMERIC(10,4),
+    nps_equipe NUMERIC(10,4),
+    pontos_nps_equipe NUMERIC(10,4),
+    reincidencia_equipe NUMERIC(10,4),
+    pontos_rcc_equipe NUMERIC(10,4),
+    reincidencia_individual NUMERIC(10,4),
+    pontos_rcc_individual NUMERIC(10,4),
+    consumo_pecas_individual NUMERIC(10,4),
+    pontos_pecas_individual NUMERIC(10,4),
+    resultado_final NUMERIC(10,4),
+    elegibilidade VARCHAR(255),
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(operacao_tecnico, mes_campanha)
+);

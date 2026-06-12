@@ -20,7 +20,7 @@ export default function BottomNav() {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${
+              className={`${item.path === '/ranking' ? 'hidden' : 'flex'} flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${
                 isActive ? 'text-brilhamais-gold' : 'text-slate-400 hover:text-slate-600'
               }`}
             >

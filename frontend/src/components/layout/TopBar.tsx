@@ -2,13 +2,14 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { Sun, Moon, Bell, User, Settings, LogOut } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import AdminSettingsModal from '../AdminSettingsModal';
 
 export default function TopBar() {
   const { user, logout } = useAuthStore();
   const { theme, setTheme } = useThemeStore();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -43,6 +44,12 @@ export default function TopBar() {
       <div className="flex items-center">
         <img src="/Logo/positivo.svg" alt="Positivo Brilha Mais" className="h-16 md:h-28 object-contain" />
       </div>
+
+      {/* Meio: Navegação Desktop */}
+      <nav className="hidden md:flex items-center space-x-8 absolute left-1/2 -translate-x-1/2">
+        <Link to="/dashboard" className={`hidden text-sm font-semibold transition-colors ${location.pathname === '/dashboard' ? 'text-brilhamais-gold' : 'text-slate-500 hover:text-slate-800 dark:text-text-muted dark:hover:text-text-main'}`}>Dashboard</Link>
+        <Link to="/ranking" className={`hidden text-sm font-semibold transition-colors ${location.pathname === '/ranking' ? 'text-brilhamais-gold' : 'text-slate-500 hover:text-slate-800 dark:text-text-muted dark:hover:text-text-main'}`}>Ranking</Link>
+      </nav>
 
       {/* Direita: Ações e Perfil */}
       <div className="flex items-center space-x-4 md:space-x-6">

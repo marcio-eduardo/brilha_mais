@@ -152,9 +152,11 @@ export default function DashboardScreen() {
     let mounted = true;
 
     const applyData = (data: any) => {
+      const normalize = (str: string) => str ? str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim() : '';
+      
       const dadosTecnico = data.find((t: any) =>
-        (user?.nomeCompleto && t.tecnico.toLowerCase() === user.nomeCompleto.toLowerCase()) ||
-        (user?.matricula && String(t.matricula) === String(user.matricula))
+        (user?.nomeCompleto && t.tecnico && normalize(t.tecnico) === normalize(user.nomeCompleto)) ||
+        (user?.matricula && t.matricula && String(t.matricula) === String(user.matricula))
       );
 
       if (dadosTecnico) {
