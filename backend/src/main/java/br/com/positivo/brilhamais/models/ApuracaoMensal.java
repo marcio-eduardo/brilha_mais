@@ -38,6 +38,12 @@ public class ApuracaoMensal {
     @Column(name = "pontos_reincidencia")
     private Double pontosReincidencia;
 
+    @Column(name = "atingimento_reincidencia_equipe")
+    private BigDecimal atingimentoReincidenciaEquipe;
+
+    @Column(name = "pontos_reincidencia_equipe")
+    private Double pontosReincidenciaEquipe;
+
     @Column(name = "atingimento_pecas")
     private BigDecimal atingimentoPecas;
 

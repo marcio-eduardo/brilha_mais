@@ -314,12 +314,15 @@ export default function DashboardScreen() {
         </div>
       </div>
 
-      {/* Grid Inferior: 4 KPIs Lado a Lado */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Grid Inferior: 6 KPIs */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         
-        {/* Card SLA */}
+        {/* Card SLA (Equipe) */}
         <div className="bg-white dark:bg-surface rounded-positivo-lg p-4 border border-slate-100 dark:border-border shadow-sm flex flex-col items-center text-center justify-center hover:border-accent-teal/30 transition-colors">
-          <h3 className="text-xs font-bold text-slate-500 dark:text-text-muted mb-1 uppercase tracking-wider">SLA On-site</h3>
+          <div className="flex flex-col items-center mb-2">
+            <span className="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-0.5 rounded-full mb-1">EQUIPE</span>
+            <h3 className="text-xs font-bold text-slate-700 dark:text-text-main uppercase tracking-wider">SLA On-site</h3>
+          </div>
           <CircularProgress
             value={percentualSla}
             maxValue={100}
@@ -327,25 +330,47 @@ export default function DashboardScreen() {
             label={percentualSla.toFixed(1)}
             isPercentage={true}
           />
-          <p className="text-[10px] text-slate-400 mt-1">Meta: 90%</p>
+          <p className="text-[10px] text-slate-400 mt-1">Meta: ≥ 90%</p>
         </div>
 
-        {/* Card Reincidência */}
+        {/* Card Reincidência (Equipe) */}
         <div className="bg-white dark:bg-surface rounded-positivo-lg p-4 border border-slate-100 dark:border-border shadow-sm flex flex-col items-center text-center justify-center hover:border-status-danger/30 transition-colors">
-          <h3 className="text-xs font-bold text-slate-500 dark:text-text-muted mb-1 uppercase tracking-wider">Reincidência</h3>
+          <div className="flex flex-col items-center mb-2">
+            <span className="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-0.5 rounded-full mb-1">EQUIPE</span>
+            <h3 className="text-xs font-bold text-slate-700 dark:text-text-main uppercase tracking-wider">Reincidência</h3>
+          </div>
           <CircularProgress
-            value={percentualReincidencia}
+            value={displayMetricas?.percentualReincidenciaEquipe || 0}
             maxValue={100}
             color="#EF4444"
-            label={percentualReincidencia.toFixed(1)}
+            label={(displayMetricas?.percentualReincidenciaEquipe || 0).toFixed(1)}
             isPercentage={true}
           />
           <p className="text-[10px] text-slate-400 mt-1">Meta: {'<'} 7%</p>
         </div>
 
-        {/* Card NPS */}
+        {/* Card Perdas SLA (Equipe) */}
+        <div className="bg-white dark:bg-surface rounded-positivo-lg p-4 border border-slate-100 dark:border-border shadow-sm flex flex-col items-center text-center justify-center hover:border-orange-400/30 transition-colors">
+          <div className="flex flex-col items-center mb-2">
+            <span className="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-0.5 rounded-full mb-1">EQUIPE</span>
+            <h3 className="text-xs font-bold text-slate-700 dark:text-text-main uppercase tracking-wider">Perdas de SLA</h3>
+          </div>
+          <CircularProgress
+            value={displayMetricas?.percentualPerdidos || 0}
+            maxValue={100}
+            color="#fb923c"
+            label={(displayMetricas?.percentualPerdidos || 0).toFixed(1)}
+            isPercentage={true}
+          />
+          <p className="text-[10px] text-slate-400 mt-1">Meta: ≤ 1%</p>
+        </div>
+
+        {/* Card NPS (Equipe) */}
         <div className="bg-white dark:bg-surface rounded-positivo-lg p-4 border border-slate-100 dark:border-border shadow-sm flex flex-col items-center text-center justify-center hover:border-accent-blue/30 transition-colors">
-          <h3 className="text-xs font-bold text-slate-500 dark:text-text-muted mb-1 uppercase tracking-wider">Satisfação (NPS)</h3>
+          <div className="flex flex-col items-center mb-2">
+            <span className="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-0.5 rounded-full mb-1">EQUIPE</span>
+            <h3 className="text-xs font-bold text-slate-700 dark:text-text-main uppercase tracking-wider">Satisfação (NPS)</h3>
+          </div>
           <CircularProgress
             value={displayMetricas?.npsScore || 0}
             maxValue={100}
@@ -356,9 +381,28 @@ export default function DashboardScreen() {
           <p className="text-[10px] text-slate-400 mt-1">Gatilho Ouro</p>
         </div>
 
-        {/* Card Uso de Peças */}
+        {/* Card Reincidência Técnica (Individual) */}
+        <div className="bg-white dark:bg-surface rounded-positivo-lg p-4 border border-slate-100 dark:border-border shadow-sm flex flex-col items-center text-center justify-center hover:border-pink-500/30 transition-colors">
+          <div className="flex flex-col items-center mb-2">
+            <span className="text-[10px] font-bold bg-accent-teal/10 text-accent-teal px-2 py-0.5 rounded-full mb-1">INDIVIDUAL</span>
+            <h3 className="text-xs font-bold text-slate-700 dark:text-text-main uppercase tracking-wider">Reincidência Técnica</h3>
+          </div>
+          <CircularProgress
+            value={percentualReincidencia}
+            maxValue={100}
+            color="#ec4899"
+            label={percentualReincidencia.toFixed(1)}
+            isPercentage={true}
+          />
+          <p className="text-[10px] text-slate-400 mt-1">Meta: {'<'} 7%</p>
+        </div>
+
+        {/* Card Uso de Peças (Individual) */}
         <div className="bg-white dark:bg-surface rounded-positivo-lg p-4 border border-slate-100 dark:border-border shadow-sm flex flex-col items-center text-center justify-center hover:border-cyan-400/30 transition-colors">
-          <h3 className="text-xs font-bold text-slate-500 dark:text-text-muted mb-1 uppercase tracking-wider">Uso de Peças</h3>
+          <div className="flex flex-col items-center mb-2">
+            <span className="text-[10px] font-bold bg-accent-teal/10 text-accent-teal px-2 py-0.5 rounded-full mb-1">INDIVIDUAL</span>
+            <h3 className="text-xs font-bold text-slate-700 dark:text-text-main uppercase tracking-wider">Uso de Peças</h3>
+          </div>
           
           <div className="relative w-36 h-36 mx-auto mb-2 mt-2">
             {percentualConsumo === 0 ? (
@@ -389,7 +433,7 @@ export default function DashboardScreen() {
 
                 {/* Texto no centro do Donut */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-2xl font-bold text-slate-900 dark:text-text-main">{percentualConsumo}%</span>
+                  <span className="text-2xl font-bold text-slate-900 dark:text-text-main">{percentualConsumo.toFixed(1)}%</span>
                 </div>
                </>
             )}
@@ -417,7 +461,8 @@ export default function DashboardScreen() {
                   <tr className="bg-slate-100 dark:bg-background text-slate-600 dark:text-text-muted text-sm font-bold uppercase tracking-wider">
                     <th className="p-4 border-b border-slate-200 dark:border-border rounded-tl-lg">Mês</th>
                     <th className="p-4 border-b border-slate-200 dark:border-border text-center">SLA</th>
-                    <th className="p-4 border-b border-slate-200 dark:border-border text-center">Reincidência</th>
+                    <th className="p-4 border-b border-slate-200 dark:border-border text-center" title="Reincidência Equipe">Reinc. (Eqp)</th>
+                    <th className="p-4 border-b border-slate-200 dark:border-border text-center" title="Reincidência Individual">Reinc. (Ind)</th>
                     <th className="p-4 border-b border-slate-200 dark:border-border text-center">Perdas</th>
                     <th className="p-4 border-b border-slate-200 dark:border-border text-center">NPS</th>
                     <th className="p-4 border-b border-slate-200 dark:border-border text-center">Peças</th>
@@ -437,6 +482,10 @@ export default function DashboardScreen() {
                         <td className="p-4 text-center">
                           <div className="font-bold text-slate-800 dark:text-text-main">{h.percentualSla?.toFixed(2)}%</div>
                           <div className="text-xs font-medium text-accent-teal bg-accent-teal/10 px-2 py-0.5 rounded-full inline-block mt-1 whitespace-nowrap">{h.pontosSla} pts</div>
+                        </td>
+                        <td className="p-4 text-center">
+                          <div className="font-bold text-slate-800 dark:text-text-main">{h.percentualReincidenciaEquipe?.toFixed(2)}%</div>
+                          <div className="text-xs font-medium text-accent-teal bg-accent-teal/10 px-2 py-0.5 rounded-full inline-block mt-1 whitespace-nowrap">{h.pontosReincidenciaEquipe} pts</div>
                         </td>
                         <td className="p-4 text-center">
                           <div className="font-bold text-slate-800 dark:text-text-main">{h.percentualReincidencia?.toFixed(2)}%</div>

@@ -15,6 +15,8 @@ public class HistoricoDTO {
     private Double pontosSla;
     private Double percentualReincidencia;
     private Double pontosReincidencia;
+    private Double percentualReincidenciaEquipe;
+    private Double pontosReincidenciaEquipe;
     private Double npsScore;
     private Double pontosNps;
     private Double percentualEficienciaPecas;

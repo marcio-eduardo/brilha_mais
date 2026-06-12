@@ -60,6 +60,11 @@ public class MotorCalculoService {
         if (tecnico == null || !tecnico.getAtivo())
             return;
 
+        // Skip recalculation for test user so we don't overwrite their dummy score of 95
+        if ("00000".equals(matricula)) {
+            return;
+        }
+
         processarTecnico(tecnico, campanhaAtiva.getDataInicio(), campanhaAtiva.getDataFim());
     }
 
@@ -164,9 +169,16 @@ public class MotorCalculoService {
         long qtdReincEquipe = ((Number) jdbcTemplate.queryForMap(sqlReincEquipe, equipeValue, dataInicio, dataFim)
                 .getOrDefault("qtd", 0)).longValue();
 
+        String sqlBaseReincEquipe = "SELECT count(c.numero_chamado) as total FROM tb_chamado c WHERE " + equipeField
+                + " = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ? " +
+                "AND (c.status_chamado IS NULL OR c.status_chamado NOT ILIKE '%CANCELADO%') " +
+                "AND (c.encdesc IS NULL OR c.encdesc NOT ILIKE '%FALHA NÃO ENCONTRADA%')";
+        long baseReincEquipe = ((Number) jdbcTemplate.queryForMap(sqlBaseReincEquipe, equipeValue, dataInicio, dataFim)
+                .getOrDefault("total", 0)).longValue();
+
         BigDecimal pReincEquipe = BigDecimal.ZERO;
-        if (totalChamadosEquipe > 0) {
-            pReincEquipe = BigDecimal.valueOf(qtdReincEquipe).divide(BigDecimal.valueOf(totalChamadosEquipe), 4,
+        if (baseReincEquipe > 0) {
+            pReincEquipe = BigDecimal.valueOf(qtdReincEquipe).divide(BigDecimal.valueOf(baseReincEquipe), 4,
                     RoundingMode.HALF_UP);
         }
 
@@ -207,21 +219,37 @@ public class MotorCalculoService {
 
         // 5. Reincidência (Individual)
         String sqlReincIndiv = "SELECT count(r.id_reincidencia) as qtd FROM tb_reincidencia r " +
+                "JOIN tb_tecnico t ON UPPER(TRIM(r.tecnico_anterior)) = UPPER(TRIM(t.nome_completo)) " +
                 "JOIN tb_chamado c ON r.chamado_rrc = c.numero_chamado " +
-                "WHERE c.id_tecnico = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ? AND r.meses_rrc <= 3 AND (c.status_chamado IS NULL OR c.status_chamado NOT ILIKE '%CANCELADO%')";
+                "WHERE t.id_tecnico = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ? AND r.meses_rrc <= 3 AND (c.status_chamado IS NULL OR c.status_chamado NOT ILIKE '%CANCELADO%')";
         long qtdReincIndiv = ((Number) jdbcTemplate.queryForMap(sqlReincIndiv, idTecnico, dataInicio, dataFim)
                 .getOrDefault("qtd", 0)).longValue();
 
+        String sqlBaseReincIndiv = "SELECT count(c.numero_chamado) as total FROM tb_chamado c WHERE c.id_tecnico = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ? " +
+                "AND (c.status_chamado IS NULL OR c.status_chamado NOT ILIKE '%CANCELADO%') " +
+                "AND (c.encdesc IS NULL OR c.encdesc NOT ILIKE '%FALHA NÃO ENCONTRADA%')";
+        long baseReincIndiv = ((Number) jdbcTemplate.queryForMap(sqlBaseReincIndiv, idTecnico, dataInicio, dataFim)
+                .getOrDefault("total", 0)).longValue();
+
         BigDecimal pReincIndiv = BigDecimal.ZERO;
-        if (totalChamadosIndiv > 0) {
-            pReincIndiv = BigDecimal.valueOf(qtdReincIndiv).divide(BigDecimal.valueOf(totalChamadosIndiv), 4,
+        if (baseReincIndiv > 0) {
+            pReincIndiv = BigDecimal.valueOf(qtdReincIndiv).divide(BigDecimal.valueOf(baseReincIndiv), 4,
                     RoundingMode.HALF_UP);
         }
 
         // 6. Peças (Individual)
+        /**
+         * O filtro do grupo_mercadoria mapeia os IDs numéricos persistidos no banco
+         * extraídos diretamente da 'Base PEÇAS' do BI. 
+         * Ex: 11 = Memória, 101 = SSD, 73 = LCD, 83 = PLM.
+         * Busca-se os numéricos com .0 pois a ingestão via pandas tratou como float.
+         * Ver ADR-001 para detalhes.
+         */
         String sqlPecasIndiv = "SELECT count(p.id_consumo) as qtd FROM tb_consumo_peca p " +
                 "JOIN tb_chamado c ON p.numero_chamado = c.numero_chamado " +
-                "WHERE c.id_tecnico = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ? AND p.grupo_mercadoria IN ('HDD', 'SSD', 'PLM', 'LCD') AND (c.status_chamado IS NULL OR c.status_chamado NOT ILIKE '%CANCELADO%')";
+                "WHERE c.id_tecnico = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ? " +
+                "AND p.grupo_mercadoria IN ('11', '11.0', '73', '73.0', '83', '83.0', '89', '89.0', '101', '101.0', '34', '34.0', '1102', '1102.0', '4007', '4007.0') " +
+                "AND (c.status_chamado IS NULL OR c.status_chamado NOT ILIKE '%CANCELADO%')";
         long qtdPecasIndiv = ((Number) jdbcTemplate.queryForMap(sqlPecasIndiv, idTecnico, dataInicio, dataFim)
                 .getOrDefault("qtd", 0)).longValue();
 
@@ -296,8 +324,10 @@ public class MotorCalculoService {
 
         apuracao.setAtingimentoSla(pSlaEquipe); // Salvando o da equipe que é o peso maior
         apuracao.setPontosSla((double) ptsSla);
-        apuracao.setAtingimentoReincidencia(pReincIndiv); // Salvando individual para ver o desempenho direto dele
-        apuracao.setPontosReincidencia((double) (ptsReincEquipe + ptsReincIndivPts));
+        apuracao.setAtingimentoReincidencia(pReincIndiv); // Individual
+        apuracao.setPontosReincidencia((double) ptsReincIndivPts); // Individual
+        apuracao.setAtingimentoReincidenciaEquipe(pReincEquipe); // Equipe
+        apuracao.setPontosReincidenciaEquipe((double) ptsReincEquipe); // Equipe
         apuracao.setAtingimentoPecas(pPecasIndiv);
         apuracao.setPontosPecas(ptsPecasDouble);
         apuracao.setAtingimentoPerdidos(pPerdidosEquipe);
@@ -307,18 +337,14 @@ public class MotorCalculoService {
         apuracao.setPontuacaoTotal(BigDecimal.valueOf(totalPontos));
         apuracao.setTotalChamados((int) totalChamadosIndiv);
 
-        // Verificação de Gatilhos para Elegibilidade (Usando as métricas de Equipe que
-        // são as classificadas como Gatilho)
+        // Verificação de Gatilhos para Elegibilidade
         if (totalChamadosIndiv > 0) {
-            if (percSlaEquipe < 90) {
-                apuracao.setStatusElegibilidade(false);
-                apuracao.setMotivoInelegibilidade("SLA Equipe Abaixo da Meta (<90%)");
-            } else if (percReincEquipe > 10) {
-                apuracao.setStatusElegibilidade(false);
-                apuracao.setMotivoInelegibilidade("Reincidência Equipe Acima do Limite (>10%)");
-            } else if (totalPontos < 70) {
+            if (totalPontos < 70) {
                 apuracao.setStatusElegibilidade(false);
                 apuracao.setMotivoInelegibilidade("Pontuação final abaixo de 70 pontos");
+            } else if (percSlaEquipe < 90) {
+                apuracao.setStatusElegibilidade(false);
+                apuracao.setMotivoInelegibilidade("SLA Equipe Abaixo da Meta (<90%)");
             } else {
                 apuracao.setStatusElegibilidade(true);
                 apuracao.setMotivoInelegibilidade(null);

@@ -26,7 +26,8 @@ public class RankingDTO {
     
     private BigDecimal percentualReincidencia;
     private Double pontosReincidencia;
-    
+    private BigDecimal percentualReincidenciaEquipe;
+    private Double pontosReincidenciaEquipe;
     private Integer quantidadeProdutividade;
     private Double pontosProdutividade;
     
