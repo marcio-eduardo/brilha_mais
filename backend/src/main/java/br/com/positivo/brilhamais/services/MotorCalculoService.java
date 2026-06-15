@@ -26,6 +26,7 @@ public class MotorCalculoService {
     private final TecnicoRepository tecnicoRepository;
     private final ApuracaoMensalRepository apuracaoRepository;
     private final CampanhaRepository campanhaRepository;
+    private final RegrasElegibilidadeCiat regrasCiat;
 
     @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 1 * * ?")
     public void rotinaDiariaCalculo() {
@@ -163,20 +164,10 @@ public class MotorCalculoService {
         apuracao.setPontuacaoTotal(BigDecimal.valueOf(totalPontos));
         apuracao.setTotalChamados((int) totalChamadosIndiv);
 
-        // Elegibilidade
-        if (totalChamadosIndiv == 0) {
-            apuracao.setStatusElegibilidade(false);
-            apuracao.setMotivoInelegibilidade("Sem chamados no período");
-        } else if (totalPontos < 70) {
-            apuracao.setStatusElegibilidade(false);
-            apuracao.setMotivoInelegibilidade("Pontuação final abaixo de 70 pontos");
-        } else if (percSlaEquipe < 90) {
-            apuracao.setStatusElegibilidade(false);
-            apuracao.setMotivoInelegibilidade("SLA Equipe Abaixo da Meta (<90%)");
-        } else {
-            apuracao.setStatusElegibilidade(true);
-            apuracao.setMotivoInelegibilidade(null);
-        }
+        // Elegibilidade Centralizada
+        RegrasElegibilidadeCiat.VereditoElegibilidade veredito = regrasCiat.avaliar(totalPontos, percSlaEquipe, (int) totalChamadosIndiv);
+        apuracao.setStatusElegibilidade(veredito.elegivel());
+        apuracao.setMotivoInelegibilidade(veredito.motivo());
 
         apuracao.setDataCalculo(LocalDateTime.now());
         return apuracaoRepository.save(apuracao);

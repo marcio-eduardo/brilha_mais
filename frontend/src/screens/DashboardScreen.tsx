@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Award, TrendingUp, AlertCircle, UserCheck, CheckCircle2, Medal, ChevronDown, ChevronUp, Cpu, XCircle } from 'lucide-react';
+import { Award, TrendingUp, AlertCircle, UserCheck, CheckCircle2, Medal, ChevronDown, ChevronUp, Cpu, XCircle, Trophy, X, HeartHandshake } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { useAuthStore } from '../store/authStore';
 import { api } from '../services/api';
@@ -14,6 +14,8 @@ export default function DashboardScreen() {
   const [selectedMonth, setSelectedMonth] = useState<string>('Média Final');
   const [loading, setLoading] = useState(true);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [isElegivelModalOpen, setIsElegivelModalOpen] = useState(false);
+  const [isInelegivelModalOpen, setIsInelegivelModalOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -97,6 +99,14 @@ export default function DashboardScreen() {
 
   const chamados = displayMetricas?.ultimosChamados || [];
 
+  const getPremioInfo = (pontos: number) => {
+    if (pontos >= 90) return { titulo: '1º Prêmio', valor: 'R$ 300,00' };
+    if (pontos >= 80) return { titulo: '2º Prêmio', valor: 'R$ 200,00' };
+    if (pontos >= 70) return { titulo: '3º Prêmio', valor: 'R$ 100,00' };
+    return null;
+  };
+  const premioAtual = getPremioInfo(pontuacaoTotal);
+
   return (
     <div className="space-y-6 pb-6">
 
@@ -109,12 +119,16 @@ export default function DashboardScreen() {
         </div>
         <div className="flex flex-col items-end gap-2">
           {displayMetricas?.elegivel ? (
-            <button className="flex items-center space-x-2 bg-transparent border border-accent-emerald text-accent-emerald px-4 py-2 rounded-full font-medium text-sm hover:bg-accent-emerald/10 transition-colors">
+            <button 
+              onClick={() => setIsElegivelModalOpen(true)}
+              className="flex items-center space-x-2 bg-transparent border border-accent-emerald text-accent-emerald px-4 py-2 rounded-full font-medium text-sm hover:bg-accent-emerald/10 transition-colors">
               <CheckCircle2 size={16} />
               <span>Elegível para Premiação</span>
             </button>
           ) : (
-            <button className="flex items-center space-x-2 bg-transparent border border-status-danger text-status-danger px-4 py-2 rounded-full font-medium text-sm hover:bg-status-danger/10 transition-colors" title={displayMetricas?.motivoInelegibilidade}>
+            <button 
+              onClick={() => setIsInelegivelModalOpen(true)}
+              className="flex items-center space-x-2 bg-transparent border border-status-danger text-status-danger px-4 py-2 rounded-full font-medium text-sm hover:bg-status-danger/10 transition-colors">
               <XCircle size={16} />
               <span>Não Elegível</span>
             </button>
@@ -394,6 +408,81 @@ export default function DashboardScreen() {
                 Fechar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Elegível */}
+      {isElegivelModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-light-surface dark:bg-surface rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-accent-emerald/30 animate-in zoom-in-95 text-center relative p-8">
+            <button onClick={() => setIsElegivelModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+              <X size={24} />
+            </button>
+            <div className="mx-auto bg-accent-emerald/10 w-24 h-24 rounded-full flex items-center justify-center mb-6">
+              <Trophy size={48} className="text-accent-emerald" />
+            </div>
+            <h2 className="text-3xl font-black text-light-text-main dark:text-text-main mb-2">
+              {premioAtual ? "Parabéns!" : "Quase lá!"}
+            </h2>
+            <p className="text-light-text-secondary dark:text-slate-300 mb-6 text-lg">
+              {premioAtual 
+                ? "Você está elegível para a premiação neste período. Continue se empenhando para manter ou melhorar seus resultados!"
+                : "Você manteve seus indicadores dentro da meta de elegibilidade, mas a sua pontuação total ainda não atingiu a faixa de premiação."}
+            </p>
+            
+            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-100 dark:border-slate-700/50">
+              <p className="text-sm font-bold text-light-text-muted dark:text-slate-400 uppercase tracking-widest mb-2">Prêmio Projetado</p>
+              {premioAtual ? (
+                <>
+                  <div className="text-xl font-bold text-accent-emerald">{premioAtual.titulo}</div>
+                  <div className="text-4xl font-black text-light-text-main dark:text-white mt-1">{premioAtual.valor}</div>
+                  <p className="text-xs text-light-text-muted dark:text-slate-500 mt-3">* Baseado na sua pontuação de {pontuacaoTotal} pontos.</p>
+                </>
+              ) : (
+                <>
+                  <div className="text-2xl font-black text-slate-500 dark:text-slate-400 mb-2">{pontuacaoTotal} pontos</div>
+                  <p className="text-sm font-medium text-light-text-main dark:text-slate-300 leading-relaxed">
+                    Não desanime, sua pontuação pode melhorar! Lembre-se que a primeira faixa de premiação começa a partir de <strong>70 pontos</strong>.
+                  </p>
+                </>
+              )}
+            </div>
+
+            <button onClick={() => setIsElegivelModalOpen(false)} className="mt-8 w-full bg-accent-emerald hover:bg-emerald-600 text-white py-4 rounded-xl font-bold text-lg transition-colors shadow-lg shadow-accent-emerald/20">
+              Incrível!
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Inelegível */}
+      {isInelegivelModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-light-surface dark:bg-surface rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-status-danger/30 animate-in zoom-in-95 text-center relative p-8">
+            <button onClick={() => setIsInelegivelModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+              <X size={24} />
+            </button>
+            <div className="mx-auto bg-status-danger/10 w-24 h-24 rounded-full flex items-center justify-center mb-6">
+              <HeartHandshake size={48} className="text-status-danger" />
+            </div>
+            <h2 className="text-3xl font-black text-light-text-main dark:text-text-main mb-2">Não desanime!</h2>
+            <p className="text-light-text-secondary dark:text-slate-300 mb-6 text-lg">
+              Infelizmente, você não atingiu a elegibilidade neste período. Mas o próximo mês é uma nova chance de brilhar!
+            </p>
+            
+            <div className="bg-red-50 dark:bg-red-950/20 rounded-2xl p-6 border border-red-100 dark:border-red-900/30">
+              <p className="text-sm font-bold text-status-danger uppercase tracking-widest mb-2 flex items-center justify-center gap-2">
+                <AlertCircle size={16} /> Motivo
+              </p>
+              <div className="text-base font-medium text-light-text-main dark:text-slate-200">
+                {displayMetricas?.motivoInelegibilidade || "Pontuação ou gatilho não atingido."}
+              </div>
+            </div>
+
+            <button onClick={() => setIsInelegivelModalOpen(false)} className="mt-8 w-full bg-slate-800 hover:bg-slate-900 text-white py-4 rounded-xl font-bold text-lg transition-colors shadow-lg">
+              Vou melhorar!
+            </button>
           </div>
         </div>
       )}

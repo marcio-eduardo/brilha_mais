@@ -37,6 +37,7 @@ public class DashboardService {
     private final CampanhaRepository campanhaRepository;
     private final JdbcTemplate jdbcTemplate;
     private final ResultadoProvisorioRepository resultadoProvisorioRepository;
+    private final RegrasElegibilidadeCiat regrasCiat;
 
     private static final DateTimeFormatter FORMATTER_MES = DateTimeFormatter.ofPattern("MMM");
     private static final DateTimeFormatter FORMATTER_HORA = DateTimeFormatter.ofPattern("dd/MM, HH:mm");
@@ -98,8 +99,42 @@ public class DashboardService {
             String matricula = nomeParaMatricula.get(opKey);
 
             List<ApuracaoMensal> historicoApuracao = idTecnico != null ? historicoPorTecnico.getOrDefault(idTecnico, new ArrayList<>()) : new ArrayList<>();
+            
+            // Filtra o histórico para não exibir meses futuros/abertos além da planilha ingerida
+            int numMesProv = 12;
+            if (!provisorios.isEmpty() && provisorios.get(0).getMesCampanha() != null) {
+                try {
+                    numMesProv = Integer.parseInt(provisorios.get(0).getMesCampanha().split("-")[0]);
+                } catch (Exception e) {}
+            }
+            final int maxMes = numMesProv;
+
             List<HistoricoDTO> historico = historicoApuracao.stream()
-                .map(h -> mapToHistoricoDTO(h, p))
+                .map(h -> {
+                    if (h.getMesAno().getDayOfMonth() == 1 && h.getMesAno().getMonthValue() > maxMes) {
+                        // Mês futuro sem planilha ingerida: exibir zerado
+                        String lbl = h.getMesAno().format(FORMATTER_MES);
+                        return HistoricoDTO.builder()
+                            .mes(lbl)
+                            .percentualSla(0.0)
+                            .pontosSla(0.0)
+                            .percentualReincidencia(0.0)
+                            .pontosReincidencia(0.0)
+                            .percentualReincidenciaEquipe(0.0)
+                            .pontosReincidenciaEquipe(0.0)
+                            .npsScore(0.0)
+                            .pontosNps(0.0)
+                            .percentualEficienciaPecas(0.0)
+                            .pontosPecas(0.0)
+                            .percentualPerdidos(0.0)
+                            .pontosPerdidos(0.0)
+                            .pontosTotal(0)
+                            .elegivel(true)
+                            .motivoInelegibilidade("Aguardando fechamento do mês")
+                            .build();
+                    }
+                    return mapToHistoricoDTO(h, p);
+                })
                 .collect(Collectors.toList());
 
             List<Chamado> chamadosRecentes = idTecnico != null ? chamadosPorTecnico.getOrDefault(idTecnico, new ArrayList<>()) : new ArrayList<>();
@@ -139,6 +174,7 @@ public class DashboardService {
             
             List<ApuracaoMensal> historicoApuracao = historicoPorTecnico.getOrDefault(idTecnico, new ArrayList<>());
             List<HistoricoDTO> historico = historicoApuracao.stream()
+                .filter(h -> h.getMesAno().getDayOfMonth() != 1 || (h.getTotalChamados() != null && h.getTotalChamados() > 0))
                 .map(h -> mapToHistoricoDTO(h, null))
                 .collect(Collectors.toList());
             
@@ -198,8 +234,26 @@ public class DashboardService {
         String label = h.getMesAno().getDayOfMonth() == 1 ? h.getMesAno().format(FORMATTER_MES) : "Média Final";
         boolean semChamados = h.getTotalChamados() != null && h.getTotalChamados() == 0;
         
-        // Se temos um provisorio ativo para o mes de maio (regra específica temporária)
         if (p != null && h.getMesAno().getMonthValue() == 5 && p.getMesCampanha() != null && p.getMesCampanha().contains("Maio")) {
+            RegrasElegibilidadeCiat.VereditoElegibilidade veredito = regrasCiat.avaliar(
+                valToDouble(p.getResultadoFinal()),
+                valToDouble(p.getSlaEquipe()),
+                -1 // Usado da planilha
+            );
+
+            // A planilha tem a coluna base, mas a regra do CIAT pode sobrescrever
+            boolean baseElegivel = p.getElegibilidade() != null && 
+                (p.getElegibilidade().trim().equalsIgnoreCase("Sim") || 
+                 p.getElegibilidade().trim().equalsIgnoreCase("S") || 
+                 p.getElegibilidade().trim().toLowerCase().contains("eleg") || 
+                 p.getElegibilidade().trim().equals("1"));
+            
+            boolean finalElegivel = baseElegivel && veredito.elegivel();
+            String motivoStr = veredito.elegivel() ? h.getMotivoInelegibilidade() : veredito.motivo();
+            if (!baseElegivel && veredito.elegivel()) {
+                motivoStr = "Critérios de elegibilidade da campanha não atingidos";
+            }
+
             return HistoricoDTO.builder()
                 .mes(label)
                 .percentualSla(valToPct(p.getSlaEquipe()))
@@ -215,8 +269,8 @@ public class DashboardService {
                 .percentualPerdidos(valToPct(p.getPerdasSlaTransf()))
                 .pontosPerdidos(valToDouble(p.getPontosSlaTransf()))
                 .pontosTotal(p.getResultadoFinal() != null ? p.getResultadoFinal().intValue() : 0)
-                .elegivel(isElegivelProvisorio(p.getElegibilidade()))
-                .motivoInelegibilidade(h.getMotivoInelegibilidade())
+                .elegivel(finalElegivel)
+                .motivoInelegibilidade(motivoStr)
                 .build();
         }
 
@@ -260,6 +314,25 @@ public class DashboardService {
     }
 
     private RankingDTO mapToRankingDTOFromProvisorio(ResultadoProvisorio p, int pos, String matricula, LocalDate mesAno, List<HistoricoDTO> historico, List<ChamadoResumoDTO> ultimosChamados) {
+        RegrasElegibilidadeCiat.VereditoElegibilidade veredito = regrasCiat.avaliar(
+            valToDouble(p.getResultadoFinal()),
+            valToDouble(p.getSlaEquipe()),
+            -1
+        );
+
+        boolean baseElegivel = p.getElegibilidade() != null && 
+            (p.getElegibilidade().trim().equalsIgnoreCase("Sim") || 
+             p.getElegibilidade().trim().equalsIgnoreCase("S") || 
+             p.getElegibilidade().trim().toLowerCase().contains("eleg") || 
+             p.getElegibilidade().trim().equals("1"));
+             
+        boolean finalElegivel = baseElegivel && veredito.elegivel();
+
+        String motivoStr = veredito.elegivel() ? null : veredito.motivo();
+        if (!baseElegivel && veredito.elegivel()) {
+            motivoStr = "Critérios de elegibilidade da campanha não atingidos";
+        }
+
         return RankingDTO.builder()
             .posicaoRanking(pos)
             .tecnico(p.getOperacaoTecnico())
@@ -277,7 +350,8 @@ public class DashboardService {
             .pontosNps(valToDouble(p.getPontosNpsEquipe()))
             .percentualPerdidos(valToPctBD(p.getPerdasSlaTransf()))
             .pontosPerdidos(valToDouble(p.getPontosSlaTransf()))
-            .elegivel(isElegivelProvisorio(p.getElegibilidade()))
+            .elegivel(finalElegivel)
+            .motivoInelegibilidade(motivoStr)
             .mesReferencia(mesAno)
             .historico(historico)
             .ultimosChamados(ultimosChamados)
@@ -330,9 +404,5 @@ public class DashboardService {
 
     private int valToInt(Number n) {
         return n != null ? n.intValue() : 0;
-    }
-
-    private boolean isElegivelProvisorio(String e) {
-        return e != null && (e.trim().equalsIgnoreCase("Sim") || e.trim().equalsIgnoreCase("S") || e.trim().toLowerCase().contains("eleg") || e.trim().equals("1"));
     }
 }
