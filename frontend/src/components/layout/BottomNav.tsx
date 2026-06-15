@@ -11,7 +11,7 @@ export default function BottomNav() {
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-background border-t border-slate-200 dark:border-border pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-light-surface dark:bg-background border-t border-light-borderStrong dark:border-border pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
       <div className="flex justify-around items-center h-16 max-w-md mx-auto px-4">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -21,7 +21,7 @@ export default function BottomNav() {
               key={item.path}
               to={item.path}
               className={`${item.path === '/ranking' ? 'hidden' : 'flex'} flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${
-                isActive ? 'text-brilhamais-gold' : 'text-slate-400 hover:text-slate-600'
+                isActive ? 'text-brilhamais-gold' : 'text-light-text-muted hover:text-slate-600'
               }`}
             >
               <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />

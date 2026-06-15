@@ -53,7 +53,7 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white p-4 overflow-hidden relative">
+    <div className="min-h-screen flex items-center justify-center bg-grid-pattern text-white p-4 overflow-hidden relative">
       
       {/* Background decoration */}
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-accent-teal/20 rounded-full blur-[100px] pointer-events-none"></div>
@@ -63,8 +63,8 @@ export default function OnboardingScreen() {
         
         {/* Step 0: Welcome */}
         {step === 0 && (
-          <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-10 rounded-3xl text-center shadow-2xl">
-            <div className="mx-auto w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(255,255,255,0.3)]">
+          <div className="bg-light-surface/10 backdrop-blur-xl border border-white/20 p-10 rounded-3xl text-center shadow-2xl">
+            <div className="mx-auto w-24 h-24 bg-light-surface rounded-full flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(255,255,255,0.3)]">
               <img src="/Logo/positivo.svg" alt="Positivo" width={120} height={48} className="h-12 w-auto" />
             </div>
             <h1 className="text-4xl font-black mb-4">Bem-vindo(a) ao<br/><span className="text-brilhamais-gold">Brilha Mais!</span></h1>
@@ -73,7 +73,7 @@ export default function OnboardingScreen() {
             </p>
             <button 
               onClick={() => setStep(1)}
-              className="bg-brilhamais-gold hover:bg-yellow-500 text-slate-900 font-bold text-lg px-8 py-4 rounded-full transition-transform hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(250,204,21,0.4)] flex items-center justify-center w-full md:w-auto mx-auto"
+              className="bg-brilhamais-gold hover:bg-yellow-500 text-light-text-main font-bold text-lg px-8 py-4 rounded-full transition-transform hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(250,204,21,0.4)] flex items-center justify-center w-full md:w-auto mx-auto"
             >
               Começar <ChevronRight className="ml-2" />
             </button>
@@ -82,14 +82,14 @@ export default function OnboardingScreen() {
 
         {/* Step 1: Change Password */}
         {step === 1 && (
-          <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-10 rounded-3xl shadow-2xl animate-in slide-in-from-right-8 duration-500">
+          <div className="bg-light-surface/10 backdrop-blur-xl border border-white/20 p-10 rounded-3xl shadow-2xl animate-in slide-in-from-right-8 duration-500">
             <div className="flex items-center justify-center mb-6">
               <div className="w-16 h-16 bg-accent-teal/20 text-accent-teal rounded-full flex items-center justify-center">
                 <Lock size={32} />
               </div>
             </div>
             <h2 className="text-3xl font-bold text-center mb-2">Segurança em 1º lugar</h2>
-            <p className="text-slate-400 text-center mb-8">
+            <p className="text-light-text-muted text-center mb-8">
               Como este é seu primeiro acesso, precisamos que você defina uma nova senha pessoal e intransferível.
             </p>
 
@@ -108,12 +108,12 @@ export default function OnboardingScreen() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   autoComplete="new-password"
-                  className="w-full bg-slate-900/50 border border-white/10 text-white rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-accent-teal focus:border-transparent transition-colors placeholder:text-slate-500"
+                  className="w-full bg-slate-900/50 border border-white/10 text-white rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-accent-teal focus:border-transparent transition-colors placeholder:text-light-text-muted"
                 />
                 <button 
                   type="button" 
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-4 text-slate-400 hover:text-white transition-colors"
+                  className="absolute right-4 top-4 text-light-text-muted hover:text-white transition-colors"
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
@@ -127,14 +127,14 @@ export default function OnboardingScreen() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   autoComplete="new-password"
-                  className="w-full bg-slate-900/50 border border-white/10 text-white rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-accent-teal focus:border-transparent transition-colors placeholder:text-slate-500"
+                  className="w-full bg-slate-900/50 border border-white/10 text-white rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-accent-teal focus:border-transparent transition-colors placeholder:text-light-text-muted"
                 />
               </div>
 
               <button 
                 type="submit"
                 disabled={loading}
-                className="w-full bg-accent-teal hover:bg-emerald-400 text-slate-900 font-bold text-lg px-8 py-4 rounded-xl transition-colors hover:shadow-[0_0_20px_rgba(0,216,166,0.4)] disabled:opacity-50 mt-4"
+                className="w-full bg-accent-teal hover:bg-emerald-400 text-light-text-main font-bold text-lg px-8 py-4 rounded-xl transition-colors hover:shadow-[0_0_20px_rgba(0,216,166,0.4)] disabled:opacity-50 mt-4"
               >
                 {loading ? 'Salvando...' : 'Salvar e Continuar'}
               </button>
@@ -144,7 +144,7 @@ export default function OnboardingScreen() {
 
         {/* Step 2: Como funciona */}
         {step === 2 && (
-          <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 md:p-12 rounded-3xl shadow-2xl animate-in slide-in-from-right-8 duration-500">
+          <div className="bg-light-surface/10 backdrop-blur-xl border border-white/20 p-8 md:p-12 rounded-3xl shadow-2xl animate-in slide-in-from-right-8 duration-500">
             <h2 className="text-3xl font-bold text-center mb-8 flex items-center justify-center">
               <Target className="mr-3 text-brilhamais-gold" size={32}/> Como funciona a pontuação?
             </h2>
@@ -156,7 +156,7 @@ export default function OnboardingScreen() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-white mb-1">Você começa com 100 pontos</h3>
-                  <p className="text-slate-400 text-sm leading-relaxed">Todo mês, você inicia com a nota máxima de 100 pontos de SLA e Reincidência. O seu objetivo é manter essa nota alta finalizando seus chamados dentro do prazo e com qualidade.</p>
+                  <p className="text-light-text-muted text-sm leading-relaxed">Todo mês, você inicia com a nota máxima de 100 pontos de SLA e Reincidência. O seu objetivo é manter essa nota alta finalizando seus chamados dentro do prazo e com qualidade.</p>
                 </div>
               </div>
 
@@ -166,7 +166,7 @@ export default function OnboardingScreen() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-white mb-1">Métricas que Deduzem Pontos</h3>
-                  <p className="text-slate-400 text-sm leading-relaxed">Chamados Fora do SLA, Reincidências (até 3 meses) e Perdas de Performance reduzem sua nota gradativamente. Mantenha as taxas baixas!</p>
+                  <p className="text-light-text-muted text-sm leading-relaxed">Chamados Fora do SLA, Reincidências (até 3 meses) e Perdas de Performance reduzem sua nota gradativamente. Mantenha as taxas baixas!</p>
                 </div>
               </div>
 
@@ -176,7 +176,7 @@ export default function OnboardingScreen() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-white mb-1">Bônus Adicionais</h3>
-                  <p className="text-slate-400 text-sm leading-relaxed">Avaliações NPS positivas de clientes (Promotores) e baixa utilização desnecessária de peças adicionam pontos extras valiosos à sua média!</p>
+                  <p className="text-light-text-muted text-sm leading-relaxed">Avaliações NPS positivas de clientes (Promotores) e baixa utilização desnecessária de peças adicionam pontos extras valiosos à sua média!</p>
                 </div>
               </div>
             </div>
@@ -184,7 +184,7 @@ export default function OnboardingScreen() {
             <div className="mt-10 flex justify-end">
               <button 
                 onClick={() => setStep(3)}
-                className="bg-white hover:bg-slate-200 text-slate-900 font-bold px-8 py-3 rounded-full transition-colors flex items-center"
+                className="bg-light-surface hover:bg-slate-200 text-light-text-main font-bold px-8 py-3 rounded-full transition-colors flex items-center"
               >
                 Próximo <ChevronRight className="ml-1" size={20} />
               </button>
@@ -195,7 +195,7 @@ export default function OnboardingScreen() {
         {/* Step 3: Finish */}
         {step === 3 && (
           <div className="bg-gradient-to-br from-brilhamais-gold/20 to-brilhamais-gold/5 backdrop-blur-xl border border-brilhamais-gold/30 p-10 md:p-14 rounded-3xl text-center shadow-2xl animate-in slide-in-from-right-8 duration-500">
-            <div className="mx-auto w-24 h-24 bg-brilhamais-gold text-slate-900 rounded-full flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(250,204,21,0.5)]">
+            <div className="mx-auto w-24 h-24 bg-brilhamais-gold text-light-text-main rounded-full flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(250,204,21,0.5)]">
               <Trophy size={48} />
             </div>
             <h2 className="text-4xl font-black mb-4 text-white">Tudo Pronto!</h2>
@@ -205,7 +205,7 @@ export default function OnboardingScreen() {
             
             <button 
               onClick={handleFinish}
-              className="bg-brilhamais-gold hover:bg-yellow-400 text-slate-900 font-bold text-xl px-10 py-5 rounded-2xl transition-transform hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(250,204,21,0.5)] w-full flex items-center justify-center uppercase tracking-wider"
+              className="bg-brilhamais-gold hover:bg-yellow-400 text-light-text-main font-bold text-xl px-10 py-5 rounded-2xl transition-transform hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(250,204,21,0.5)] w-full flex items-center justify-center uppercase tracking-wider"
             >
               Ir para o Meu Dashboard
             </button>

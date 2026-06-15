@@ -60,21 +60,21 @@ export default function RankingScreen() {
 
   return (
     <div className="space-y-6 pb-6">
-      <div className="bg-white p-6 rounded-positivo-lg shadow-sm border border-slate-100 flex items-center justify-between">
+      <div className="bg-light-surface p-6 rounded-positivo-lg shadow-sm border border-light-border flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 flex items-center">
+          <h2 className="text-xl font-bold text-light-text-main flex items-center">
             <Trophy className="text-brilhamais-gold mr-2" size={24} />
             Ranking Geral
           </h2>
-          <p className="text-sm text-slate-500 mt-1">Sua posição atual é a {myPos}ª</p>
+          <p className="text-sm text-light-text-muted mt-1">Sua posição atual é a {myPos}ª</p>
         </div>
-        <div className="bg-positivo-primary text-white w-14 h-14 rounded-full flex items-center justify-center font-bold text-2xl shadow-md border-4 border-slate-50">
+        <div className="bg-positivo-primary text-white w-14 h-14 rounded-full flex items-center justify-center font-bold text-2xl shadow-md border-4 border-light-background">
           {myPos}º
         </div>
       </div>
 
-      <div className="bg-white rounded-positivo-lg shadow-sm border border-slate-100 overflow-hidden">
-        <ul className="divide-y divide-slate-100">
+      <div className="bg-light-surface rounded-positivo-lg shadow-sm border border-light-border overflow-hidden">
+        <ul className="divide-y divide-light-border">
           {rankingData.map((usr, index) => (
             <li 
               key={usr.id + '-' + index} 
@@ -87,13 +87,13 @@ export default function RankingScreen() {
               )}
               
               <div className="flex items-center space-x-4">
-                <div className="font-bold text-slate-400 w-6 text-center">
+                <div className="font-bold text-light-text-muted w-6 text-center">
                   {usr.posicaoRanking}
                 </div>
                 
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                   index === 0 ? 'bg-yellow-100 text-yellow-600' :
-                  index === 1 ? 'bg-slate-200 text-slate-600' :
+                  index === 1 ? 'bg-light-borderStrong text-light-text-muted' :
                   index === 2 && !usr.isMe ? 'bg-orange-100 text-orange-600' :
                   'bg-positivo-secondary text-white'
                 }`}>
@@ -101,15 +101,15 @@ export default function RankingScreen() {
                 </div>
                 
                 <div>
-                  <p className={`font-semibold ${usr.isMe ? 'text-slate-900' : 'text-slate-700'}`}>
+                  <p className={`font-semibold ${usr.isMe ? 'text-light-text-main' : 'text-light-text-secondary'}`}>
                     {usr.name}
                   </p>
-                  <p className="text-xs text-slate-500">{usr.base}</p>
+                  <p className="text-xs text-light-text-muted">{usr.base}</p>
                 </div>
               </div>
               
-              <div className="font-bold text-slate-900">
-                {typeof usr.score === 'number' ? usr.score.toFixed(1) : usr.score} <span className="text-xs text-slate-400 font-normal">pts</span>
+              <div className="font-bold text-light-text-main">
+                {typeof usr.score === 'number' ? usr.score.toFixed(1) : usr.score} <span className="text-xs text-light-text-muted font-normal">pts</span>
               </div>
             </li>
           ))}

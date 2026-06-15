@@ -29,305 +29,131 @@ public class MotorCalculoService {
 
     @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 1 * * ?")
     public void rotinaDiariaCalculo() {
-        calcularEProcessarMes(LocalDate.now().withDayOfMonth(1)); // Param is ignored, uses Campanha
+        calcularEProcessarMes(LocalDate.now().withDayOfMonth(1));
     }
 
     @Transactional
     public void calcularEProcessarMes(LocalDate ignoredParam) {
-        // Obter datas da campanha ativa
         Campanha campanhaAtiva = campanhaRepository.findFirstByAtivaTrueOrderByIdCampanhaDesc().orElse(null);
-        if (campanhaAtiva == null)
-            return;
+        if (campanhaAtiva == null) return;
 
         LocalDate dataInicio = campanhaAtiva.getDataInicio();
         LocalDate dataFim = campanhaAtiva.getDataFim();
 
-        List<Tecnico> tecnicos = tecnicoRepository.findAll();
-        for (Tecnico tecnico : tecnicos) {
-            if (!tecnico.getAtivo())
-                continue;
-            processarTecnico(tecnico, dataInicio, dataFim);
-        }
+        tecnicoRepository.findAll().stream()
+            .filter(Tecnico::getAtivo)
+            .forEach(tecnico -> processarTecnico(tecnico, dataInicio, dataFim));
     }
 
     @Transactional
     public void calcularEProcessarTecnico(String matricula) {
         Campanha campanhaAtiva = campanhaRepository.findFirstByAtivaTrueOrderByIdCampanhaDesc().orElse(null);
-        if (campanhaAtiva == null)
-            return;
+        if (campanhaAtiva == null) return;
 
         Tecnico tecnico = tecnicoRepository.findByMatricula(matricula).orElse(null);
-        if (tecnico == null || !tecnico.getAtivo())
-            return;
-
-        // Skip recalculation for test user so we don't overwrite their dummy score of 95
-        if ("00000".equals(matricula)) {
-            return;
-        }
+        if (tecnico == null || !tecnico.getAtivo() || "00000".equals(matricula)) return;
 
         processarTecnico(tecnico, campanhaAtiva.getDataInicio(), campanhaAtiva.getDataFim());
     }
 
-    
     private void processarTecnico(Tecnico tecnico, LocalDate dataInicioCampanha, LocalDate dataFimCampanha) {
         // Mês 1
         LocalDate m1Inicio = dataInicioCampanha.withDayOfMonth(1);
-        LocalDate m1Fim = m1Inicio.withDayOfMonth(m1Inicio.lengthOfMonth());
-        if (m1Fim.isAfter(dataFimCampanha)) m1Fim = dataFimCampanha;
-
+        LocalDate m1Fim = dataFimCampanha.isBefore(m1Inicio.withDayOfMonth(m1Inicio.lengthOfMonth())) ? dataFimCampanha : m1Inicio.withDayOfMonth(m1Inicio.lengthOfMonth());
         ApuracaoMensal ap1 = calcularParaPeriodo(tecnico, m1Inicio, m1Fim, m1Inicio);
         
         // Mês 2
         LocalDate m2Inicio = m1Fim.plusDays(1).withDayOfMonth(1);
-        ApuracaoMensal ap2 = null;
-        if (!m2Inicio.isAfter(dataFimCampanha)) {
-            LocalDate m2Fim = m2Inicio.withDayOfMonth(m2Inicio.lengthOfMonth());
-            if (m2Fim.isAfter(dataFimCampanha)) m2Fim = dataFimCampanha;
-            ap2 = calcularParaPeriodo(tecnico, m2Inicio, m2Fim, m2Inicio);
-        }
+        if (m2Inicio.isAfter(dataFimCampanha)) return;
+        
+        LocalDate m2Fim = dataFimCampanha.isBefore(m2Inicio.withDayOfMonth(m2Inicio.lengthOfMonth())) ? dataFimCampanha : m2Inicio.withDayOfMonth(m2Inicio.lengthOfMonth());
+        ApuracaoMensal ap2 = calcularParaPeriodo(tecnico, m2Inicio, m2Fim, m2Inicio);
 
         // Média Geral
-        if (ap2 != null) {
-            ApuracaoMensal apFinal = apuracaoRepository
-                .findFirstByTecnicoIdTecnicoAndMesAno(tecnico.getIdTecnico(), dataFimCampanha)
-                .orElse(ApuracaoMensal.builder()
-                        .tecnico(tecnico)
-                        .mesAno(dataFimCampanha)
-                        .build());
-                        
-            apFinal.setAtingimentoSla(ap1.getAtingimentoSla().add(ap2.getAtingimentoSla()).divide(BigDecimal.valueOf(2), 4, RoundingMode.HALF_UP));
-            apFinal.setPontosSla((ap1.getPontosSla() + ap2.getPontosSla()) / 2.0);
-            
-            apFinal.setAtingimentoReincidencia(ap1.getAtingimentoReincidencia().add(ap2.getAtingimentoReincidencia()).divide(BigDecimal.valueOf(2), 4, RoundingMode.HALF_UP));
-            apFinal.setPontosReincidencia((ap1.getPontosReincidencia() + ap2.getPontosReincidencia()) / 2.0);
-            
-            apFinal.setAtingimentoPecas(ap1.getAtingimentoPecas().add(ap2.getAtingimentoPecas()).divide(BigDecimal.valueOf(2), 4, RoundingMode.HALF_UP));
-            apFinal.setPontosPecas((ap1.getPontosPecas() + ap2.getPontosPecas()) / 2.0);
-            
-            apFinal.setAtingimentoNps(ap1.getAtingimentoNps().add(ap2.getAtingimentoNps()).divide(BigDecimal.valueOf(2), 4, RoundingMode.HALF_UP));
-            apFinal.setPontosNps((ap1.getPontosNps() + ap2.getPontosNps()) / 2.0);
-            
-            apFinal.setAtingimentoPerdidos(ap1.getAtingimentoPerdidos().add(ap2.getAtingimentoPerdidos()).divide(BigDecimal.valueOf(2), 4, RoundingMode.HALF_UP));
-            apFinal.setPontosPerdidos((ap1.getPontosPerdidos() + ap2.getPontosPerdidos()) / 2.0);
-            
-            apFinal.setPontuacaoTotal(ap1.getPontuacaoTotal().add(ap2.getPontuacaoTotal()).divide(BigDecimal.valueOf(2), 4, RoundingMode.HALF_UP));
-            apFinal.setTotalChamados(ap1.getTotalChamados() + ap2.getTotalChamados());
-            
-            // Elegibilidade final: se perdeu elegibilidade em qualquer mês, perde na campanha?
-            // Ou calculamos baseado na média? O usuário disse que "a pontuação final é a média".
-            // Vamos manter a elegibilidade se a média estiver dentro da meta.
-            double percSla = apFinal.getAtingimentoSla().doubleValue() * 100;
-            // Para reincidencia equipe precisamos da media da equipe. O mais simples é verificar se ele foi elegivel nos dois meses.
-            if (!ap1.getStatusElegibilidade()) {
-                apFinal.setStatusElegibilidade(false);
-                apFinal.setMotivoInelegibilidade("Inelegível no Mês 1: " + ap1.getMotivoInelegibilidade());
-            } else if (!ap2.getStatusElegibilidade()) {
-                apFinal.setStatusElegibilidade(false);
-                apFinal.setMotivoInelegibilidade("Inelegível no Mês 2: " + ap2.getMotivoInelegibilidade());
-            } else {
-                apFinal.setStatusElegibilidade(true);
-                apFinal.setMotivoInelegibilidade(null);
-            }
-            
-            apFinal.setDataCalculo(LocalDateTime.now());
-            apuracaoRepository.save(apFinal);
+        ApuracaoMensal apFinal = apuracaoRepository
+            .findFirstByTecnicoIdTecnicoAndMesAno(tecnico.getIdTecnico(), dataFimCampanha)
+            .orElse(ApuracaoMensal.builder().tecnico(tecnico).mesAno(dataFimCampanha).build());
+                    
+        apFinal.setAtingimentoSla(calcularMedia(ap1.getAtingimentoSla(), ap2.getAtingimentoSla()));
+        apFinal.setPontosSla((ap1.getPontosSla() + ap2.getPontosSla()) / 2.0);
+        
+        apFinal.setAtingimentoReincidencia(calcularMedia(ap1.getAtingimentoReincidencia(), ap2.getAtingimentoReincidencia()));
+        apFinal.setPontosReincidencia((ap1.getPontosReincidencia() + ap2.getPontosReincidencia()) / 2.0);
+        
+        apFinal.setAtingimentoPecas(calcularMedia(ap1.getAtingimentoPecas(), ap2.getAtingimentoPecas()));
+        apFinal.setPontosPecas((ap1.getPontosPecas() + ap2.getPontosPecas()) / 2.0);
+        
+        apFinal.setAtingimentoNps(calcularMedia(ap1.getAtingimentoNps(), ap2.getAtingimentoNps()));
+        apFinal.setPontosNps((ap1.getPontosNps() + ap2.getPontosNps()) / 2.0);
+        
+        apFinal.setAtingimentoPerdidos(calcularMedia(ap1.getAtingimentoPerdidos(), ap2.getAtingimentoPerdidos()));
+        apFinal.setPontosPerdidos((ap1.getPontosPerdidos() + ap2.getPontosPerdidos()) / 2.0);
+        
+        apFinal.setPontuacaoTotal(calcularMedia(ap1.getPontuacaoTotal(), ap2.getPontuacaoTotal()));
+        apFinal.setTotalChamados(ap1.getTotalChamados() + ap2.getTotalChamados());
+        
+        if (!ap1.getStatusElegibilidade()) {
+            apFinal.setStatusElegibilidade(false);
+            apFinal.setMotivoInelegibilidade("Inelegível no Mês 1: " + ap1.getMotivoInelegibilidade());
+        } else if (!ap2.getStatusElegibilidade()) {
+            apFinal.setStatusElegibilidade(false);
+            apFinal.setMotivoInelegibilidade("Inelegível no Mês 2: " + ap2.getMotivoInelegibilidade());
+        } else {
+            apFinal.setStatusElegibilidade(true);
+            apFinal.setMotivoInelegibilidade(null);
         }
+        
+        apFinal.setDataCalculo(LocalDateTime.now());
+        apuracaoRepository.save(apFinal);
     }
 
     private ApuracaoMensal calcularParaPeriodo(Tecnico tecnico, LocalDate dataInicio, LocalDate dataFim, LocalDate mesAnoGravacao) {
-
         int idTecnico = tecnico.getIdTecnico();
-
         boolean hasCtBase = tecnico.getCtBase() != null && !tecnico.getCtBase().isEmpty();
         String equipeField = hasCtBase ? "c.ct_base" : "c.id_tecnico";
         Object equipeValue = hasCtBase ? tecnico.getCtBase() : idTecnico;
 
-        // --- MÉTRICAS DE EQUIPE ---
+        // Buscando Métricas Base do BD
+        BigDecimal pSlaEquipe = calcularPercentualSlaEquipe(equipeField, equipeValue, dataInicio, dataFim);
+        BigDecimal pReincEquipe = calcularPercentualReincidenciaEquipe(equipeField, equipeValue, dataInicio, dataFim);
+        BigDecimal pPerdidosEquipe = calcularPercentualPerdidosEquipe(equipeField, equipeValue, dataInicio, dataFim);
+        Map<String, Object> npsResult = buscarNps(equipeField, equipeValue, dataInicio, dataFim);
+        long totalChamadosIndiv = buscarTotalChamadosIndividual(idTecnico, dataInicio, dataFim);
+        BigDecimal pReincIndiv = calcularPercentualReincidenciaIndividual(idTecnico, dataInicio, dataFim);
+        BigDecimal pPecasIndiv = calcularPercentualPecasIndividual(idTecnico, totalChamadosIndiv, dataInicio, dataFim);
 
-        // 1. SLA (Equipe)
-        String sqlSlaEquipe = "SELECT count(c.numero_chamado) as total, " +
-                "COALESCE(sum(case when c.status_sla = 'DENTRO' then 1 else 0 end), 0) as dentro " +
-                "FROM tb_chamado c WHERE " + equipeField
-                + " = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ? " +
-                "AND (c.status_chamado IS NULL OR c.status_chamado NOT ILIKE '%CANCELADO%')";
-        Map<String, Object> slaEquipeResult = jdbcTemplate.queryForMap(sqlSlaEquipe, equipeValue, dataInicio, dataFim);
-        long totalChamadosEquipe = ((Number) slaEquipeResult.get("total")).longValue();
-        long dentroSlaEquipe = ((Number) slaEquipeResult.get("dentro")).longValue();
-
-        BigDecimal pSlaEquipe = BigDecimal.ZERO;
-        if (totalChamadosEquipe > 0) {
-            pSlaEquipe = BigDecimal.valueOf(dentroSlaEquipe).divide(BigDecimal.valueOf(totalChamadosEquipe), 4,
-                    RoundingMode.HALF_UP);
-        }
-
-        // 2. Reincidência (Equipe)
-        String sqlReincEquipe = "SELECT count(r.id_reincidencia) as qtd FROM tb_reincidencia r " +
-                "JOIN tb_chamado c ON r.chamado_rrc = c.numero_chamado " +
-                "WHERE " + equipeField
-                + " = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ? AND r.meses_rrc <= 3 " +
-                "AND (c.status_chamado IS NULL OR c.status_chamado NOT ILIKE '%CANCELADO%')";
-        long qtdReincEquipe = ((Number) jdbcTemplate.queryForMap(sqlReincEquipe, equipeValue, dataInicio, dataFim)
-                .getOrDefault("qtd", 0)).longValue();
-
-        String sqlBaseReincEquipe = "SELECT count(c.numero_chamado) as total FROM tb_chamado c WHERE " + equipeField
-                + " = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ? " +
-                "AND (c.status_chamado IS NULL OR c.status_chamado NOT ILIKE '%CANCELADO%') " +
-                "AND (c.encdesc IS NULL OR c.encdesc NOT ILIKE '%FALHA NÃO ENCONTRADA%')";
-        long baseReincEquipe = ((Number) jdbcTemplate.queryForMap(sqlBaseReincEquipe, equipeValue, dataInicio, dataFim)
-                .getOrDefault("total", 0)).longValue();
-
-        BigDecimal pReincEquipe = BigDecimal.ZERO;
-        if (baseReincEquipe > 0) {
-            pReincEquipe = BigDecimal.valueOf(qtdReincEquipe).divide(BigDecimal.valueOf(baseReincEquipe), 4,
-                    RoundingMode.HALF_UP);
-        }
-
-        // 3. Chamados Perdidos (Equipe)
-        String sqlPerdidosEquipe = "SELECT count(c.numero_chamado) as perdidos " +
-                "FROM tb_chamado c WHERE " + equipeField
-                + " = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ? " +
-                "AND (c.status_chamado IS NULL OR c.status_chamado NOT ILIKE '%CANCELADO%') " +
-                "AND (c.pp = 1 OR c.classificacao_chamado IN ('TRANSFERENCIA ENTRE BASES', 'PERFORMANCE FALHA GESTAO') " +
-                "OR c.encdesc IN ('TRANSFERENCIA ENTRE BASES', 'PERFORMANCE FALHA GESTAO') " +
-                "OR c.ofensor IN ('TRANSFERENCIA ENTRE BASES', 'PERFORMANCE FALHA GESTAO'))";
-        long qtdPerdidosEquipe = ((Number) jdbcTemplate.queryForMap(sqlPerdidosEquipe, equipeValue, dataInicio, dataFim)
-                .getOrDefault("perdidos", 0)).longValue();
-
-        BigDecimal pPerdidosEquipe = BigDecimal.ZERO;
-        if (totalChamadosEquipe > 0) {
-            pPerdidosEquipe = BigDecimal.valueOf(qtdPerdidosEquipe).divide(BigDecimal.valueOf(totalChamadosEquipe), 4,
-                    RoundingMode.HALF_UP);
-        }
-
-        // 4. NPS (Equipe) - Buscando da nova tabela tb_nps
-        String sqlNps = "SELECT count(n.id_nps) as total, " +
-                "COALESCE(sum(case when n.classificacao = 'PROMOTOR' then 1 else 0 end), 0) as promotores, " +
-                "COALESCE(sum(case when n.classificacao = 'DETRATOR' then 1 else 0 end), 0) as detratores " +
-                "FROM tb_nps n JOIN tb_chamado c ON n.numero_chamado = c.numero_chamado " +
-                "WHERE " + equipeField + " = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ?";
-        Map<String, Object> npsResult = jdbcTemplate.queryForMap(sqlNps, equipeValue, dataInicio, dataFim);
-        long totalNps = ((Number) npsResult.get("total")).longValue();
-        long promotoresNps = ((Number) npsResult.get("promotores")).longValue();
-        long detratoresNps = ((Number) npsResult.get("detratores")).longValue();
-
-        // --- MÉTRICAS INDIVIDUAIS ---
-
-        // Total Chamados Individual
-        String sqlTotalIndiv = "SELECT count(c.numero_chamado) as total FROM tb_chamado c WHERE c.id_tecnico = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ? AND (c.status_chamado IS NULL OR c.status_chamado NOT ILIKE '%CANCELADO%')";
-        long totalChamadosIndiv = ((Number) jdbcTemplate.queryForMap(sqlTotalIndiv, idTecnico, dataInicio, dataFim)
-                .getOrDefault("total", 0)).longValue();
-
-        // 5. Reincidência (Individual)
-        String sqlReincIndiv = "SELECT count(r.id_reincidencia) as qtd FROM tb_reincidencia r " +
-                "JOIN tb_tecnico t ON UPPER(TRIM(r.tecnico_anterior)) = UPPER(TRIM(t.nome_completo)) " +
-                "JOIN tb_chamado c ON r.chamado_rrc = c.numero_chamado " +
-                "WHERE t.id_tecnico = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ? AND r.meses_rrc <= 3 AND (c.status_chamado IS NULL OR c.status_chamado NOT ILIKE '%CANCELADO%')";
-        long qtdReincIndiv = ((Number) jdbcTemplate.queryForMap(sqlReincIndiv, idTecnico, dataInicio, dataFim)
-                .getOrDefault("qtd", 0)).longValue();
-
-        String sqlBaseReincIndiv = "SELECT count(c.numero_chamado) as total FROM tb_chamado c WHERE c.id_tecnico = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ? " +
-                "AND (c.status_chamado IS NULL OR c.status_chamado NOT ILIKE '%CANCELADO%') " +
-                "AND (c.encdesc IS NULL OR c.encdesc NOT ILIKE '%FALHA NÃO ENCONTRADA%')";
-        long baseReincIndiv = ((Number) jdbcTemplate.queryForMap(sqlBaseReincIndiv, idTecnico, dataInicio, dataFim)
-                .getOrDefault("total", 0)).longValue();
-
-        BigDecimal pReincIndiv = BigDecimal.ZERO;
-        if (baseReincIndiv > 0) {
-            pReincIndiv = BigDecimal.valueOf(qtdReincIndiv).divide(BigDecimal.valueOf(baseReincIndiv), 4,
-                    RoundingMode.HALF_UP);
-        }
-
-        // 6. Peças (Individual)
-        /**
-         * O filtro do grupo_mercadoria mapeia os IDs numéricos persistidos no banco
-         * extraídos diretamente da 'Base PEÇAS' do BI. 
-         * Ex: 11 = Memória, 101 = SSD, 73 = LCD, 83 = PLM.
-         * Busca-se os numéricos com .0 pois a ingestão via pandas tratou como float.
-         * Ver ADR-001 para detalhes.
-         */
-        String sqlPecasIndiv = "SELECT count(p.id_consumo) as qtd FROM tb_consumo_peca p " +
-                "JOIN tb_chamado c ON p.numero_chamado = c.numero_chamado " +
-                "WHERE c.id_tecnico = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ? " +
-                "AND p.grupo_mercadoria IN ('11', '11.0', '73', '73.0', '83', '83.0', '89', '89.0', '101', '101.0', '34', '34.0', '1102', '1102.0', '4007', '4007.0') " +
-                "AND (c.status_chamado IS NULL OR c.status_chamado NOT ILIKE '%CANCELADO%')";
-        long qtdPecasIndiv = ((Number) jdbcTemplate.queryForMap(sqlPecasIndiv, idTecnico, dataInicio, dataFim)
-                .getOrDefault("qtd", 0)).longValue();
-
-        BigDecimal pPecasIndiv = BigDecimal.ZERO;
-        if (totalChamadosIndiv > 0) {
-            pPecasIndiv = BigDecimal.valueOf(qtdPecasIndiv).divide(BigDecimal.valueOf(totalChamadosIndiv), 4,
-                    RoundingMode.HALF_UP);
-        }
-
-        // --- CÁLCULO DE PONTOS (CIAT) ---
-
-        // 1. SLA Equipe (Gatilho) - Peso 25
+        // Transformando Métricas em Pontos
         double percSlaEquipe = pSlaEquipe.doubleValue() * 100;
-        int ptsSla = 0;
-
-        if (percSlaEquipe >= 100) {
-            ptsSla = 25;
-        } else if (percSlaEquipe >= 90) {
-            ptsSla = 20;
-        }
-
-        // 2. Reincidência Técnica Equipe (Gatilho) - Peso 10
+        int ptsSla = calcularPontosSla(percSlaEquipe);
+        
         double percReincEquipe = pReincEquipe.doubleValue() * 100;
-        int ptsReincEquipe = 0;
-        if (percReincEquipe <= 7)
-            ptsReincEquipe = 10;
-        else if (percReincEquipe <= 10)
-            ptsReincEquipe = 5;
-
-        // 3. Chamados Perdidos Equipe - Peso 20
+        int ptsReincEquipe = calcularPontosReincidenciaEquipe(percReincEquipe);
+        
         double percPerdidosEquipe = pPerdidosEquipe.doubleValue() * 100;
-        int ptsPerdidos = 0;
-        if (percPerdidosEquipe <= 1)
-            ptsPerdidos = 20;
-        else if (percPerdidosEquipe <= 2)
-            ptsPerdidos = 15;
-
-        // 4. NPS Equipe - Peso 17.5
-        double ptsNps = 0;
-        BigDecimal pNps = BigDecimal.ZERO;
-        if (totalNps == 0) {
-            ptsNps = 17.5; // Sem dados = Meta Atingida (para não penalizar a ausência da tb_nps)
-            pNps = BigDecimal.ONE; // Considera 100% (1.0) se não tem avaliações ruins
-        } else {
-            if (promotoresNps > 0 && detratoresNps == 0)
-                ptsNps = 17.5;
-            double score = (double) (promotoresNps - detratoresNps) / totalNps;
-            pNps = BigDecimal.valueOf(Math.max(score, 0));
-        }
-
-        // 5. Reincidência Técnica Individual - Peso 15
+        int ptsPerdidos = calcularPontosPerdidos(percPerdidosEquipe);
+        
+        double ptsNps = calcularPontosNps(npsResult);
+        BigDecimal pNps = extrairPercentualNps(npsResult);
+        
         double percReincIndiv = pReincIndiv.doubleValue() * 100;
-        int ptsReincIndivPts = 0;
-        if (percReincIndiv <= 7)
-            ptsReincIndivPts = 15;
-        else if (percReincIndiv <= 10)
-            ptsReincIndivPts = 10;
-
-        // 6. Eficiência no uso de Peças Individual - Peso 12.5
+        int ptsReincIndivPts = calcularPontosReincidenciaIndividual(percReincIndiv);
+        
         double percPecasIndiv = pPecasIndiv.doubleValue() * 100;
         double ptsPecasDouble = (percPecasIndiv <= 25) ? 12.5 : 0;
 
-        // Somatório Total (Máximo 100)
         double totalPontos = ptsSla + ptsReincEquipe + ptsPerdidos + ptsNps + ptsReincIndivPts + ptsPecasDouble;
 
+        // Construindo e Salvando a Entidade
         ApuracaoMensal apuracao = apuracaoRepository
                 .findFirstByTecnicoIdTecnicoAndMesAno(idTecnico, dataInicio)
-                .orElse(ApuracaoMensal.builder()
-                        .tecnico(tecnico)
-                        .mesAno(mesAnoGravacao)
-                        .build());
+                .orElse(ApuracaoMensal.builder().tecnico(tecnico).mesAno(mesAnoGravacao).build());
 
-        apuracao.setAtingimentoSla(pSlaEquipe); // Salvando o da equipe que é o peso maior
+        apuracao.setAtingimentoSla(pSlaEquipe);
         apuracao.setPontosSla((double) ptsSla);
-        apuracao.setAtingimentoReincidencia(pReincIndiv); // Individual
-        apuracao.setPontosReincidencia((double) ptsReincIndivPts); // Individual
-        apuracao.setAtingimentoReincidenciaEquipe(pReincEquipe); // Equipe
-        apuracao.setPontosReincidenciaEquipe((double) ptsReincEquipe); // Equipe
+        apuracao.setAtingimentoReincidencia(pReincIndiv);
+        apuracao.setPontosReincidencia((double) ptsReincIndivPts);
+        apuracao.setAtingimentoReincidenciaEquipe(pReincEquipe);
+        apuracao.setPontosReincidenciaEquipe((double) ptsReincEquipe);
         apuracao.setAtingimentoPecas(pPecasIndiv);
         apuracao.setPontosPecas(ptsPecasDouble);
         apuracao.setAtingimentoPerdidos(pPerdidosEquipe);
@@ -337,25 +163,147 @@ public class MotorCalculoService {
         apuracao.setPontuacaoTotal(BigDecimal.valueOf(totalPontos));
         apuracao.setTotalChamados((int) totalChamadosIndiv);
 
-        // Verificação de Gatilhos para Elegibilidade
-        if (totalChamadosIndiv > 0) {
-            if (totalPontos < 70) {
-                apuracao.setStatusElegibilidade(false);
-                apuracao.setMotivoInelegibilidade("Pontuação final abaixo de 70 pontos");
-            } else if (percSlaEquipe < 90) {
-                apuracao.setStatusElegibilidade(false);
-                apuracao.setMotivoInelegibilidade("SLA Equipe Abaixo da Meta (<90%)");
-            } else {
-                apuracao.setStatusElegibilidade(true);
-                apuracao.setMotivoInelegibilidade(null);
-            }
-        } else {
+        // Elegibilidade
+        if (totalChamadosIndiv == 0) {
             apuracao.setStatusElegibilidade(false);
             apuracao.setMotivoInelegibilidade("Sem chamados no período");
+        } else if (totalPontos < 70) {
+            apuracao.setStatusElegibilidade(false);
+            apuracao.setMotivoInelegibilidade("Pontuação final abaixo de 70 pontos");
+        } else if (percSlaEquipe < 90) {
+            apuracao.setStatusElegibilidade(false);
+            apuracao.setMotivoInelegibilidade("SLA Equipe Abaixo da Meta (<90%)");
+        } else {
+            apuracao.setStatusElegibilidade(true);
+            apuracao.setMotivoInelegibilidade(null);
         }
 
         apuracao.setDataCalculo(LocalDateTime.now());
         return apuracaoRepository.save(apuracao);
+    }
+
+    // --- MÉTODOS AUXILIARES: CÁLCULOS E REGRAS ---
+
+    private BigDecimal calcularMedia(BigDecimal v1, BigDecimal v2) {
+        return v1.add(v2).divide(BigDecimal.valueOf(2), 4, RoundingMode.HALF_UP);
+    }
+
+    private int calcularPontosSla(double perc) {
+        if (perc >= 100) return 25;
+        if (perc >= 90) return 20;
+        return 0;
+    }
+
+    private int calcularPontosReincidenciaEquipe(double perc) {
+        if (perc <= 7) return 10;
+        if (perc <= 10) return 5;
+        return 0;
+    }
+
+    private int calcularPontosPerdidos(double perc) {
+        if (perc <= 1) return 20;
+        if (perc <= 2) return 15;
+        return 0;
+    }
+
+    private int calcularPontosReincidenciaIndividual(double perc) {
+        if (perc <= 7) return 15;
+        if (perc <= 10) return 10;
+        return 0;
+    }
+
+    private double calcularPontosNps(Map<String, Object> result) {
+        long total = ((Number) result.get("total")).longValue();
+        long promotores = ((Number) result.get("promotores")).longValue();
+        long detratores = ((Number) result.get("detratores")).longValue();
+        
+        if (total == 0 || (promotores > 0 && detratores == 0)) return 17.5;
+        return 0.0;
+    }
+
+    private BigDecimal extrairPercentualNps(Map<String, Object> result) {
+        long total = ((Number) result.get("total")).longValue();
+        long promotores = ((Number) result.get("promotores")).longValue();
+        long detratores = ((Number) result.get("detratores")).longValue();
+        if (total == 0) return BigDecimal.ONE;
+        double score = (double) (promotores - detratores) / total;
+        return BigDecimal.valueOf(Math.max(score, 0));
+    }
+
+    // --- MÉTODOS AUXILIARES: CONSULTAS JDBC ---
+
+    private BigDecimal calcularPercentualSlaEquipe(String equipeField, Object equipeValue, LocalDate inicio, LocalDate fim) {
+        String sql = "SELECT count(c.numero_chamado) as total, COALESCE(sum(case when c.status_sla = 'DENTRO' then 1 else 0 end), 0) as dentro " +
+                "FROM tb_chamado c WHERE " + equipeField + " = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ? " +
+                "AND (c.status_chamado IS NULL OR c.status_chamado NOT ILIKE '%CANCELADO%')";
+        Map<String, Object> r = jdbcTemplate.queryForMap(sql, equipeValue, inicio, fim);
+        long t = ((Number) r.get("total")).longValue();
+        long d = ((Number) r.get("dentro")).longValue();
+        return t > 0 ? BigDecimal.valueOf(d).divide(BigDecimal.valueOf(t), 4, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+    }
+
+    private BigDecimal calcularPercentualReincidenciaEquipe(String equipeField, Object equipeValue, LocalDate inicio, LocalDate fim) {
+        String sql1 = "SELECT count(r.id_reincidencia) as qtd FROM tb_reincidencia r JOIN tb_chamado c ON r.chamado_rrc = c.numero_chamado " +
+                "WHERE " + equipeField + " = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ? AND r.meses_rrc <= 3 " +
+                "AND (c.status_chamado IS NULL OR c.status_chamado NOT ILIKE '%CANCELADO%')";
+        long qtd = ((Number) jdbcTemplate.queryForMap(sql1, equipeValue, inicio, fim).getOrDefault("qtd", 0)).longValue();
+
+        String sql2 = "SELECT count(c.numero_chamado) as total FROM tb_chamado c WHERE " + equipeField + " = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ? " +
+                "AND (c.status_chamado IS NULL OR c.status_chamado NOT ILIKE '%CANCELADO%') AND (c.encdesc IS NULL OR c.encdesc NOT ILIKE '%FALHA NÃO ENCONTRADA%')";
+        long base = ((Number) jdbcTemplate.queryForMap(sql2, equipeValue, inicio, fim).getOrDefault("total", 0)).longValue();
+        
+        return base > 0 ? BigDecimal.valueOf(qtd).divide(BigDecimal.valueOf(base), 4, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+    }
+
+    private BigDecimal calcularPercentualPerdidosEquipe(String equipeField, Object equipeValue, LocalDate inicio, LocalDate fim) {
+        String sql = "SELECT count(c.numero_chamado) as perdidos FROM tb_chamado c WHERE " + equipeField + " = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ? " +
+                "AND (c.status_chamado IS NULL OR c.status_chamado NOT ILIKE '%CANCELADO%') " +
+                "AND (c.pp = 1 OR c.classificacao_chamado IN ('TRANSFERENCIA ENTRE BASES', 'PERFORMANCE FALHA GESTAO') " +
+                "OR c.encdesc IN ('TRANSFERENCIA ENTRE BASES', 'PERFORMANCE FALHA GESTAO') " +
+                "OR c.ofensor IN ('TRANSFERENCIA ENTRE BASES', 'PERFORMANCE FALHA GESTAO'))";
+        long qtd = ((Number) jdbcTemplate.queryForMap(sql, equipeValue, inicio, fim).getOrDefault("perdidos", 0)).longValue();
+        
+        String sqlT = "SELECT count(c.numero_chamado) as total FROM tb_chamado c WHERE " + equipeField + " = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ? " +
+                "AND (c.status_chamado IS NULL OR c.status_chamado NOT ILIKE '%CANCELADO%')";
+        long t = ((Number) jdbcTemplate.queryForMap(sqlT, equipeValue, inicio, fim).getOrDefault("total", 0)).longValue();
+
+        return t > 0 ? BigDecimal.valueOf(qtd).divide(BigDecimal.valueOf(t), 4, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+    }
+
+    private Map<String, Object> buscarNps(String equipeField, Object equipeValue, LocalDate inicio, LocalDate fim) {
+        String sql = "SELECT count(n.id_nps) as total, COALESCE(sum(case when n.classificacao = 'PROMOTOR' then 1 else 0 end), 0) as promotores, " +
+                "COALESCE(sum(case when n.classificacao = 'DETRATOR' then 1 else 0 end), 0) as detratores " +
+                "FROM tb_nps n JOIN tb_chamado c ON n.numero_chamado = c.numero_chamado " +
+                "WHERE " + equipeField + " = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ?";
+        return jdbcTemplate.queryForMap(sql, equipeValue, inicio, fim);
+    }
+
+    private long buscarTotalChamadosIndividual(int idTecnico, LocalDate inicio, LocalDate fim) {
+        String sql = "SELECT count(c.numero_chamado) as total FROM tb_chamado c WHERE c.id_tecnico = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ? AND (c.status_chamado IS NULL OR c.status_chamado NOT ILIKE '%CANCELADO%')";
+        return ((Number) jdbcTemplate.queryForMap(sql, idTecnico, inicio, fim).getOrDefault("total", 0)).longValue();
+    }
+
+    private BigDecimal calcularPercentualReincidenciaIndividual(int idTecnico, LocalDate inicio, LocalDate fim) {
+        String sql1 = "SELECT count(r.id_reincidencia) as qtd FROM tb_reincidencia r JOIN tb_tecnico t ON UPPER(TRIM(r.tecnico_anterior)) = UPPER(TRIM(t.nome_completo)) " +
+                "JOIN tb_chamado c ON r.chamado_rrc = c.numero_chamado " +
+                "WHERE t.id_tecnico = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ? AND r.meses_rrc <= 3 AND (c.status_chamado IS NULL OR c.status_chamado NOT ILIKE '%CANCELADO%')";
+        long qtd = ((Number) jdbcTemplate.queryForMap(sql1, idTecnico, inicio, fim).getOrDefault("qtd", 0)).longValue();
+
+        String sql2 = "SELECT count(c.numero_chamado) as total FROM tb_chamado c WHERE c.id_tecnico = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ? " +
+                "AND (c.status_chamado IS NULL OR c.status_chamado NOT ILIKE '%CANCELADO%') AND (c.encdesc IS NULL OR c.encdesc NOT ILIKE '%FALHA NÃO ENCONTRADA%')";
+        long base = ((Number) jdbcTemplate.queryForMap(sql2, idTecnico, inicio, fim).getOrDefault("total", 0)).longValue();
+
+        return base > 0 ? BigDecimal.valueOf(qtd).divide(BigDecimal.valueOf(base), 4, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+    }
+
+    private BigDecimal calcularPercentualPecasIndividual(int idTecnico, long totalChamados, LocalDate inicio, LocalDate fim) {
+        String sql = "SELECT count(p.id_consumo) as qtd FROM tb_consumo_peca p JOIN tb_chamado c ON p.numero_chamado = c.numero_chamado " +
+                "WHERE c.id_tecnico = ? AND c.data_encerramento >= ? AND c.data_encerramento <= ? " +
+                "AND p.grupo_mercadoria IN ('11', '11.0', '73', '73.0', '83', '83.0', '89', '89.0', '101', '101.0', '34', '34.0', '1102', '1102.0', '4007', '4007.0') " +
+                "AND (c.status_chamado IS NULL OR c.status_chamado NOT ILIKE '%CANCELADO%')";
+        long qtd = ((Number) jdbcTemplate.queryForMap(sql, idTecnico, inicio, fim).getOrDefault("qtd", 0)).longValue();
+
+        return totalChamados > 0 ? BigDecimal.valueOf(qtd).divide(BigDecimal.valueOf(totalChamados), 4, RoundingMode.HALF_UP) : BigDecimal.ZERO;
     }
 
 }

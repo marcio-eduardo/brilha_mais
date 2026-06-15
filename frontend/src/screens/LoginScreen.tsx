@@ -113,69 +113,68 @@ export default function LoginScreen() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-positivo-lg shadow-lg border border-slate-100">
-        <div className="flex flex-col items-center">
-          <img
-            className="h-36 w-auto mb-6"
-            src="/Logo/positivo.svg"
-            alt="Positivo Brilha Mais"
-            width={120}
-            height={144}
-          />
-          <h2 className="text-center text-2xl font-bold tracking-tight text-slate-900">
-            Acesso ao Sistema
-          </h2>
-          <p className="mt-2 text-center text-sm text-slate-500">
-            Programa de Desempenho Técnico
+    <div className="min-h-screen w-full flex flex-col md:flex-row items-center justify-center gap-12 md:gap-24 py-12 px-4 sm:px-6 lg:px-8 bg-grid-pattern">
+
+      {/* Coluna Esquerda: Logo */}
+      <div className="flex flex-col items-center">
+        <div className="logo-container flex items-center justify-center relative pt-2 pb-2">
+          <div className="glow-ring"></div>
+          <h1 className="text-5xl font-black tracking-tighter text-slate-50 flex items-baseline relative z-10 uppercase" style={{ fontFamily: "'Arial Black', Impact, sans-serif", letterSpacing: "-0.05em" }}>
+            Brilha<span className="text-6xl plus-sign neon-glow ml-1 leading-none">+</span>
+          </h1>
+        </div>
+        <div className="mt-1 text-center">
+          <p className="text-emerald-400 font-bold tracking-[0.3em] uppercase text-xs opacity-80">
+            Performance & Engajamento
           </p>
         </div>
+      </div>
 
+      {/* Coluna Direita: Formulário */}
+      <div className="w-full max-w-sm flex flex-col z-10">
         {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm text-center font-medium shadow-sm">
+          <div className="bg-red-500/10 border border-red-500/50 text-red-200 p-3 rounded-xl text-center text-sm font-medium shadow-sm mb-6">
             {error}
           </div>
         )}
 
-        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="userId" className="block text-sm font-medium text-slate-700">Matrícula</label>
-              <input
-                id="userId"
-                name="userId"
-                type="text"
-                required
-                autoComplete="username"
-                className="mt-1 appearance-none relative block w-full px-3 py-3 border border-slate-300 placeholder-slate-400 text-slate-900 rounded-positivo-sm focus:outline-none focus:ring-2 focus:ring-brilhamais-gold focus:border-transparent sm:text-sm"
-                placeholder="Ex: 12345"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700">Senha</label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                autoComplete="current-password"
-                className="mt-1 appearance-none relative block w-full px-3 py-3 border border-slate-300 placeholder-slate-400 text-slate-900 rounded-positivo-sm focus:outline-none focus:ring-2 focus:ring-brilhamais-gold focus:border-transparent sm:text-sm"
-                placeholder="••••••••"
-              />
-            </div>
+        <form className="space-y-4" onSubmit={handleLogin}>
+          <div>
+            <label htmlFor="userId" className="sr-only">Matrícula</label>
+            <input
+              id="userId"
+              name="userId"
+              type="text"
+              required
+              autoComplete="username"
+              className="dark-autofill w-full bg-[#0f172a] border border-[#1e293b] text-slate-200 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-accent-teal focus:border-accent-teal transition-all placeholder:text-slate-500 text-sm shadow-inner"
+              placeholder="Matrícula"
+            />
+          </div>
+          <div>
+            <label htmlFor="password" className="sr-only">Senha</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              autoComplete="current-password"
+              className="dark-autofill w-full bg-[#0f172a] border border-[#1e293b] text-slate-200 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-accent-teal focus:border-accent-teal transition-all placeholder:text-slate-500 text-sm shadow-inner"
+              placeholder="Senha"
+            />
           </div>
 
-          <div>
+          <div className="pt-2">
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-positivo-md text-white bg-positivo-primary hover:bg-positivo-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brilhamais-gold transition-colors shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-bold rounded-xl text-[#0f172a] bg-accent-teal hover:bg-[#00e6b0] focus:outline-none transition-all shadow-[0_0_15px_rgba(0,216,166,0.2)] hover:shadow-[0_0_20px_rgba(0,216,166,0.4)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Autenticando...' : 'Entrar'}
             </button>
           </div>
 
-          <div className="mt-4 text-center">
+          <div className="mt-6 text-center">
             <button
               type="button"
               onClick={() => {
@@ -186,29 +185,29 @@ export default function LoginScreen() {
                 setPaEstado('');
                 setPaMatricula('');
               }}
-              className="text-sm font-medium text-positivo-primary hover:text-positivo-secondary transition-colors"
+              className="text-sm font-bold text-accent-teal hover:text-[#00e6b0] transition-colors"
             >
-              Primeiro acesso? Cadastre-se aqui
+              Primeiro acesso? Clique aqui!
             </button>
           </div>
         </form>
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-grid-pattern">
           <div className="w-full max-w-md z-10 animate-in fade-in zoom-in-95 duration-200">
-            <div className="bg-[#1e293b] backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl">
-              
+            <div className="bg-[#1e293b] p-8 rounded-2xl shadow-2xl border border-white/5">
+
               <div className="flex items-center justify-center mb-6">
-                <div className="w-16 h-16 bg-accent-teal/10 text-accent-teal rounded-full flex items-center justify-center shadow-lg shadow-accent-teal/20">
-                  {primeiroAcessoStep === 1 ? <User size={32} /> : <ShieldCheck size={32} />}
+                <div className="w-14 h-14 bg-accent-teal/5 text-accent-teal rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(0,216,166,0.15)] ring-1 ring-accent-teal/20">
+                  {primeiroAcessoStep === 1 ? <User size={26} strokeWidth={2.5} /> : <ShieldCheck size={26} />}
                 </div>
               </div>
 
-              <h3 className="text-2xl font-bold text-center text-white mb-2">Primeiro Acesso</h3>
-              <p className="text-slate-400 text-center mb-8 text-sm">
-                {primeiroAcessoStep === 1 
-                  ? "Para iniciar seu cadastro, preencha seus dados de identificação abaixo." 
+              <h3 className="text-2xl font-light text-center text-white mb-2">Primeiro Acesso</h3>
+              <p className="text-slate-400 text-center mb-8 text-sm px-2">
+                {primeiroAcessoStep === 1
+                  ? "Para iniciar seu cadastro, preencha seus dados de identificação abaixo."
                   : "Quase lá! Confirme se a sua matrícula está correta."}
               </p>
 
@@ -227,7 +226,7 @@ export default function LoginScreen() {
                       required
                       value={paNome}
                       onChange={e => setPaNome(e.target.value)}
-                      className="w-full bg-slate-900/50 border border-white/10 text-white rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-accent-teal focus:border-transparent transition-colors placeholder:text-slate-500"
+                      className="dark-autofill w-full bg-[#0f172a] border border-[#1e293b] text-slate-200 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-accent-teal focus:border-accent-teal transition-all placeholder:text-slate-500 text-sm"
                       placeholder="Nome Completo"
                     />
                   </div>
@@ -238,7 +237,7 @@ export default function LoginScreen() {
                       required
                       value={paEstado}
                       onChange={e => setPaEstado(e.target.value)}
-                      className="w-full bg-slate-900/50 border border-white/10 text-white rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-accent-teal focus:border-transparent transition-colors placeholder:text-slate-500"
+                      className="dark-autofill w-full bg-[#0f172a] border border-[#1e293b] text-slate-200 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-accent-teal focus:border-accent-teal transition-all placeholder:text-slate-500 text-sm"
                       placeholder="Estado (Ex: RJ)"
                     />
                   </div>
@@ -249,23 +248,23 @@ export default function LoginScreen() {
                       required
                       value={paMatricula}
                       onChange={e => setPaMatricula(e.target.value)}
-                      className="w-full bg-slate-900/50 border border-white/10 text-white rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-accent-teal focus:border-transparent transition-colors placeholder:text-slate-500"
+                      className="dark-autofill w-full bg-[#0f172a] border border-[#1e293b] text-slate-200 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-accent-teal focus:border-accent-teal transition-all placeholder:text-slate-500 text-sm"
                       placeholder="Matrícula (Exatamente 5 dígitos)"
                     />
                   </div>
-                  
-                  <div className="flex gap-3 mt-6 pt-2">
+
+                  <div className="flex gap-4 mt-8 pt-2">
                     <button
                       type="button"
                       onClick={() => setIsModalOpen(false)}
-                      className="flex-1 px-4 py-4 border border-white/10 bg-white/5 text-slate-300 rounded-xl hover:bg-white/10 transition-colors font-bold text-sm"
+                      className="flex-1 px-4 py-3.5 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 text-slate-200 rounded-xl transition-all font-semibold text-sm shadow-sm"
                     >
                       Cancelar
                     </button>
                     <button
                       type="submit"
                       disabled={paLoading}
-                      className="flex-1 px-4 py-4 bg-accent-teal hover:bg-emerald-400 text-slate-900 rounded-xl transition-colors font-bold text-sm disabled:opacity-50 hover:shadow-[0_0_20px_rgba(0,216,166,0.3)]"
+                      className="flex-1 px-4 py-3.5 bg-accent-teal hover:bg-[#00e6b0] text-[#0f172a] rounded-xl transition-all font-bold text-sm disabled:opacity-50 hover:shadow-[0_0_15px_rgba(0,216,166,0.3)] shadow-md"
                     >
                       {paLoading ? 'Verificando...' : 'Continuar'}
                     </button>
@@ -273,16 +272,16 @@ export default function LoginScreen() {
                 </form>
               ) : (
                 <div className="space-y-6 text-center">
-                  <div className="bg-slate-900/50 border border-white/5 rounded-2xl p-6">
-                    <p className="text-slate-400 text-sm mb-2">Sua Matrícula</p>
+                  <div className="bg-[#0f172a] border border-[#1e293b] rounded-2xl p-6">
+                    <p className="text-slate-500 text-sm mb-2 font-medium">Sua Matrícula</p>
                     <p className="text-3xl font-black text-white tracking-widest">{paMatricula}</p>
                   </div>
-                  
-                  <div className="flex gap-3 mt-8">
+
+                  <div className="flex gap-4 mt-8">
                     <button
                       type="button"
                       onClick={() => setPrimeiroAcessoStep(1)}
-                      className="flex-1 px-4 py-4 border border-white/10 bg-white/5 text-slate-300 rounded-xl hover:bg-white/10 transition-colors font-bold text-sm"
+                      className="flex-1 px-4 py-3.5 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 text-slate-200 rounded-xl transition-all font-semibold text-sm shadow-sm"
                     >
                       Voltar
                     </button>
@@ -290,7 +289,7 @@ export default function LoginScreen() {
                       type="button"
                       onClick={handleConfirmarMatricula}
                       disabled={paLoading}
-                      className="flex-1 px-4 py-4 bg-accent-teal hover:bg-emerald-400 text-slate-900 rounded-xl transition-colors font-bold text-sm disabled:opacity-50 hover:shadow-[0_0_20px_rgba(0,216,166,0.3)]"
+                      className="flex-1 px-4 py-3.5 bg-accent-teal hover:bg-[#00e6b0] text-[#0f172a] rounded-xl transition-all font-bold text-sm disabled:opacity-50 hover:shadow-[0_0_15px_rgba(0,216,166,0.3)] shadow-md"
                     >
                       {paLoading ? 'Salvando...' : 'Confirmar e Salvar'}
                     </button>

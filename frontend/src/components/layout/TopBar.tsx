@@ -38,7 +38,7 @@ export default function TopBar() {
   const isAdmin = user?.cargo === 'Administrador' || user?.cargo === 'Admin' || user?.cargo === 'Super Administrador';
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white dark:bg-background shadow-sm border-b border-slate-200 dark:border-border z-40 h-20 flex items-center justify-between px-6 pt-safe">
+    <header className="fixed top-0 left-0 right-0 bg-light-surface dark:bg-background shadow-sm border-b border-light-borderStrong dark:border-border z-40 h-20 flex items-center justify-between px-6 pt-safe">
 
       {/* Esquerda: Logo */}
       <div className="flex items-center">
@@ -47,8 +47,8 @@ export default function TopBar() {
 
       {/* Meio: Navegação Desktop */}
       <nav className="hidden md:flex items-center space-x-8 absolute left-1/2 -translate-x-1/2">
-        <Link to="/dashboard" className={`hidden text-sm font-semibold transition-colors ${location.pathname === '/dashboard' ? 'text-brilhamais-gold' : 'text-slate-500 hover:text-slate-800 dark:text-text-muted dark:hover:text-text-main'}`}>Dashboard</Link>
-        <Link to="/ranking" className={`hidden text-sm font-semibold transition-colors ${location.pathname === '/ranking' ? 'text-brilhamais-gold' : 'text-slate-500 hover:text-slate-800 dark:text-text-muted dark:hover:text-text-main'}`}>Ranking</Link>
+        <Link to="/dashboard" className={`hidden text-sm font-semibold transition-colors ${location.pathname === '/dashboard' ? 'text-brilhamais-gold' : 'text-light-text-muted hover:text-light-text-secondary dark:text-text-muted dark:hover:text-text-main'}`}>Dashboard</Link>
+        <Link to="/ranking" className={`hidden text-sm font-semibold transition-colors ${location.pathname === '/ranking' ? 'text-brilhamais-gold' : 'text-light-text-muted hover:text-light-text-secondary dark:text-text-muted dark:hover:text-text-main'}`}>Ranking</Link>
       </nav>
 
       {/* Direita: Ações e Perfil */}
@@ -57,13 +57,13 @@ export default function TopBar() {
         {/* Toggle de Tema */}
         <button
           onClick={toggleTheme}
-          className="p-2 rounded-full text-slate-500 hover:text-slate-700 dark:text-text-muted dark:hover:text-text-main transition-colors"
+          className="p-2 rounded-full text-light-text-muted hover:text-light-text-secondary dark:text-text-muted dark:hover:text-text-main transition-colors"
         >
           {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
         </button>
 
         {/* Notificações */}
-        <button className="relative p-2 rounded-full text-slate-500 hover:text-slate-700 dark:text-text-muted dark:hover:text-text-main transition-colors">
+        <button className="relative p-2 rounded-full text-light-text-muted hover:text-light-text-secondary dark:text-text-muted dark:hover:text-text-main transition-colors">
           <Bell size={20} />
           {/* Badge vermelho de notificação */}
           <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
@@ -79,28 +79,28 @@ export default function TopBar() {
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             <div className="hidden md:flex flex-col items-end">
-              <span className="text-sm font-bold text-slate-900 dark:text-text-main leading-tight">
+              <span className="text-sm font-bold text-light-text-main dark:text-text-main leading-tight">
                 {user?.nomeCompleto || 'Técnico'}
               </span>
               <span className="text-xs text-accent-teal font-medium">
                 {user?.cargo || 'Técnico N2'}
               </span>
             </div>
-            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-surface border border-slate-200 dark:border-border flex items-center justify-center text-slate-500 dark:text-text-muted hover:bg-slate-200 transition-colors">
+            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-surface border border-light-borderStrong dark:border-border flex items-center justify-center text-light-text-muted dark:text-text-muted hover:bg-slate-200 transition-colors">
               <User size={20} />
             </div>
           </div>
 
           {/* Menu Dropdown */}
           {isMenuOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-surface rounded-md shadow-lg py-1 border border-slate-200 dark:border-border z-50 animate-in fade-in slide-in-from-top-2">
+            <div className="absolute right-0 mt-2 w-48 bg-light-surface dark:bg-surface rounded-md shadow-lg py-1 border border-light-borderStrong dark:border-border z-50 animate-in fade-in slide-in-from-top-2">
               {isAdmin && (
                 <button
                   onClick={() => {
                     setIsMenuOpen(false);
                     setIsSettingsModalOpen(true);
                   }}
-                  className="flex items-center w-full px-4 py-2 text-sm text-slate-700 dark:text-text-main hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  className="flex items-center w-full px-4 py-2 text-sm text-light-text-secondary dark:text-text-main hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 >
                   <Settings size={16} className="mr-2" />
                   Configurações

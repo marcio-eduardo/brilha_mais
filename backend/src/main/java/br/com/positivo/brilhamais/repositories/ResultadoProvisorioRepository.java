@@ -12,4 +12,8 @@ public interface ResultadoProvisorioRepository extends JpaRepository<ResultadoPr
     
     @Query("SELECT r FROM ResultadoProvisorio r ORDER BY r.resultadoFinal DESC")
     List<ResultadoProvisorio> findRankingOrderByResultadoFinalDesc();
+
+    List<ResultadoProvisorio> findByMesCampanha(String mesCampanha);
+
+    ResultadoProvisorio findFirstByOrderByMesCampanhaDesc();
 }

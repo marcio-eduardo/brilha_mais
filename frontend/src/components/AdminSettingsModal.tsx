@@ -68,26 +68,26 @@ export default function AdminSettingsModal({ isOpen, onClose }: AdminSettingsMod
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-surface rounded-positivo-xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-border animate-in zoom-in-95 duration-200">
+      <div className="bg-light-surface dark:bg-surface rounded-positivo-xl shadow-xl w-full max-w-lg overflow-hidden border border-light-borderStrong dark:border-border animate-in zoom-in-95 duration-200">
         
         {/* Header do Modal */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-border bg-slate-50 dark:bg-slate-800/50">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-light-border dark:border-border bg-light-background dark:bg-slate-800/50">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-positivo-primary/10 rounded-lg text-positivo-primary">
               <Calendar size={20} />
             </div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-text-main">Período de Apuração</h2>
+            <h2 className="text-lg font-bold text-light-text-main dark:text-text-main">Período de Apuração</h2>
           </div>
           <button 
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            className="p-2 text-light-text-muted hover:text-slate-600 dark:hover:text-slate-300 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Corpo do Modal */}
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto max-h-[70vh] scrollbar-hide">
           {loading ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-teal"></div>
@@ -108,7 +108,7 @@ export default function AdminSettingsModal({ isOpen, onClose }: AdminSettingsMod
               <form onSubmit={salvarCampanha} className="space-y-5">
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="dataInicio" className="block text-sm font-bold text-slate-700 dark:text-text-main mb-1.5">
+                    <label htmlFor="dataInicio" className="block text-sm font-bold text-light-text-secondary dark:text-text-main mb-1.5">
                       Data de Início
                     </label>
                     <input
@@ -117,12 +117,12 @@ export default function AdminSettingsModal({ isOpen, onClose }: AdminSettingsMod
                       value={dataInicio}
                       onChange={(e) => setDataInicio(e.target.value)}
                       required
-                      className="w-full px-4 py-2.5 border border-slate-300 dark:border-border rounded-lg shadow-sm focus:ring-2 focus:ring-positivo-primary focus:border-positivo-primary bg-white dark:bg-background text-slate-900 dark:text-text-main"
+                      className="w-full px-4 py-2.5 border border-light-borderStrong dark:border-border rounded-lg shadow-sm focus:ring-2 focus:ring-positivo-primary focus:border-positivo-primary bg-light-surface dark:bg-background text-light-text-main dark:text-text-main"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="dataFim" className="block text-sm font-bold text-slate-700 dark:text-text-main mb-1.5">
+                    <label htmlFor="dataFim" className="block text-sm font-bold text-light-text-secondary dark:text-text-main mb-1.5">
                       Data de Fim
                     </label>
                     <input
@@ -131,7 +131,7 @@ export default function AdminSettingsModal({ isOpen, onClose }: AdminSettingsMod
                       value={dataFim}
                       onChange={(e) => setDataFim(e.target.value)}
                       required
-                      className="w-full px-4 py-2.5 border border-slate-300 dark:border-border rounded-lg shadow-sm focus:ring-2 focus:ring-positivo-primary focus:border-positivo-primary bg-white dark:bg-background text-slate-900 dark:text-text-main"
+                      className="w-full px-4 py-2.5 border border-light-borderStrong dark:border-border rounded-lg shadow-sm focus:ring-2 focus:ring-positivo-primary focus:border-positivo-primary bg-light-surface dark:bg-background text-light-text-main dark:text-text-main"
                     />
                   </div>
                 </div>

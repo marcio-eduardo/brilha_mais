@@ -18,25 +18,25 @@ export default function ProfileScreen() {
 
   return (
     <div className="space-y-6 pb-8">
-      <h1 className="text-2xl font-bold text-slate-900 dark:text-text-main">Perfil</h1>
+      <h1 className="text-2xl font-bold text-light-text-main dark:text-text-main">Perfil</h1>
 
       {/* Cartão de Informações do Usuário */}
-      <div className="bg-white dark:bg-surface p-6 rounded-positivo-lg shadow-sm border border-slate-100 dark:border-border flex flex-col items-center">
+      <div className="bg-light-surface dark:bg-surface p-6 rounded-positivo-lg shadow-sm border border-light-border dark:border-border flex flex-col items-center">
         <div className="w-20 h-20 bg-slate-200 dark:bg-positivo-secondary rounded-full flex items-center justify-center mb-4">
-          <User size={40} className="text-slate-400 dark:text-slate-500" />
+          <User size={40} className="text-light-text-muted dark:text-light-text-muted" />
         </div>
-        <h2 className="text-xl font-bold text-slate-900 dark:text-text-main text-center">
+        <h2 className="text-xl font-bold text-light-text-main dark:text-text-main text-center">
           {user?.nomeCompleto || 'Técnico Brilha Mais'}
         </h2>
-        <p className="text-sm text-slate-500 dark:text-text-muted mt-1">
+        <p className="text-sm text-light-text-muted dark:text-text-muted mt-1">
           Matrícula: {user?.matricula}
         </p>
       </div>
 
       {/* Configurações de Aparência */}
-      <div className="bg-white dark:bg-surface p-6 rounded-positivo-lg shadow-sm border border-slate-100 dark:border-border space-y-4">
-        <h3 className="font-semibold text-slate-900 dark:text-text-main">Aparência</h3>
-        <p className="text-sm text-slate-500 dark:text-text-muted">
+      <div className="bg-light-surface dark:bg-surface p-6 rounded-positivo-lg shadow-sm border border-light-border dark:border-border space-y-4">
+        <h3 className="font-semibold text-light-text-main dark:text-text-main">Aparência</h3>
+        <p className="text-sm text-light-text-muted dark:text-text-muted">
           Escolha o seu tema preferido para o aplicativo.
         </p>
 
@@ -51,8 +51,8 @@ export default function ProfileScreen() {
                 onClick={() => setTheme(option.value)}
                 className={`flex-1 flex flex-col items-center justify-center py-2 space-y-1 rounded-positivo-md transition-all duration-200 ${
                   isActive
-                    ? 'bg-white dark:bg-surface shadow-sm text-positivo-accent dark:text-primary-DEFAULT font-medium'
-                    : 'text-slate-500 dark:text-text-muted hover:text-slate-700 dark:hover:text-text-main'
+                    ? 'bg-light-surface dark:bg-surface shadow-sm text-positivo-accent dark:text-primary-DEFAULT font-medium'
+                    : 'text-light-text-muted dark:text-text-muted hover:text-light-text-secondary dark:hover:text-text-main'
                 }`}
               >
                 <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />

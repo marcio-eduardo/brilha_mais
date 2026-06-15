@@ -40,6 +40,18 @@ export default {
           muted: '#94A3B8',    // Cinza ardósia para legendas
         },
 
+        light: {
+          background: '#d8e2ff73', // Fundo principal (antigo slate-50)
+          surface: '#ffffff',    // Fundo de modais/cards (antigo white)
+          border: '#f1f5f9',     // Linhas e bordas (antigo slate-100)
+          borderStrong: '#e2e8f0',// Bordas mais fortes (antigo slate-200)
+          text: {
+            main: '#0f172a',     // Texto principal (antigo slate-900)
+            secondary: '#334155',// Texto secundário (antigo slate-700)
+            muted: '#64748b',    // Texto silenciado/legendas (antigo slate-500)
+          }
+        },
+
         status: {
           success: '#10B981',  // emerald-500 - SLA Batido (Verde vibrante)
           warning: '#F59E0B',  // amber-500 - Atenção na meta (Laranja)
@@ -57,5 +69,20 @@ export default {
       }
     },
   },
-  plugins: [],
+  plugins: [
+    function({ addUtilities }) {
+      addUtilities({
+        '.bg-grid-pattern': {
+          'background-color': '#040d1c',
+          'background-image': `
+            radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.05) 0%, transparent 50%),
+            linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)
+          `,
+          'background-size': '100% 100%, 40px 40px, 40px 40px',
+          'background-position': 'center center',
+        }
+      })
+    }
+  ],
 }
